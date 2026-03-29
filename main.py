@@ -132,20 +132,25 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os, re, uuid
 
-# Initialize Firebase Admin SDK
-if not firebase_admin._apps:
-    if os.path.exists("serviceAccountKey.json"):
-        cred = credentials.Certificate("serviceAccountKey.json")
-        firebase_admin.initialize_app(cred)
-    elif os.environ.get("FIREBASE_SERVICE_ACCOUNT"):
-        import json
-        sa_info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
-        cred = credentials.Certificate(sa_info)
-        firebase_admin.initialize_app(cred)
-    else:
-        firebase_admin.initialize_app()
-
-db = firestore.client()
+# Initialize Firebase Admin SDK (optional - voice endpoints need it, price endpoints don't)
+_firebase_initialized = False
+db = None
+try:
+    if not firebase_admin._apps:
+        if os.path.exists("serviceAccountKey.json"):
+            cred = credentials.Certificate("serviceAccountKey.json")
+            firebase_admin.initialize_app(cred)
+        elif os.environ.get("FIREBASE_SERVICE_ACCOUNT"):
+            import json
+            sa_info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
+            cred = credentials.Certificate(sa_info)
+            firebase_admin.initialize_app(cred)
+        else:
+            firebase_admin.initialize_app()
+    db = firestore.client()
+    _firebase_initialized = True
+except Exception as e:
+    print(f"Firebase init skipped: {e}. Voice endpoints will not work.")
 
 PRODUCT_CATALOG = [
     "leche entera", "leche descremada", "pan blanco", "pan integral",
@@ -183,6 +188,8 @@ class VoiceCommand(BaseModel):
 
 @app.post("/voice/google")
 async def process_google_assistant(body: dict):
+    if not _firebase_initialized:
+        return {"fulfillmentText": "Servicio de voz no disponible."}
     params = body.get("queryResult", {}).get("parameters", {})
     user_id = (body.get("originalDetectIntentRequest", {}).get("payload", {}).get("user", {}).get("userId")
                or body.get("session", ""))
@@ -203,6 +210,8 @@ async def process_google_assistant(body: dict):
 
 @app.post("/voice/alexa")
 async def process_alexa_skill(body: dict):
+    if not _firebase_initialized:
+        return alexa_response("Servicio de voz no disponible.", True)
     req = body.get("request", {})
     if req.get("type") != "IntentRequest":
         return alexa_response("Decime qué producto querés agregar.", False)
