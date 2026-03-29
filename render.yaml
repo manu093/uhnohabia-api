@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: uhnohabia-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /app/serviceAccountKey.json
