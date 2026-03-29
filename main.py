@@ -137,6 +137,11 @@ if not firebase_admin._apps:
     if os.path.exists("serviceAccountKey.json"):
         cred = credentials.Certificate("serviceAccountKey.json")
         firebase_admin.initialize_app(cred)
+    elif os.environ.get("FIREBASE_SERVICE_ACCOUNT"):
+        import json
+        sa_info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
+        cred = credentials.Certificate(sa_info)
+        firebase_admin.initialize_app(cred)
     else:
         firebase_admin.initialize_app()
 
