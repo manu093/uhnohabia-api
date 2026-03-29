@@ -245,11 +245,6 @@ async def process_voice_command(cmd: VoiceCommand) -> dict:
     list_name = (cmd.listName or "Mi Lista").strip()
     product_names = parse_multiple_products(cmd.productName)
 
-    for name in product_names:
-        matches = find_matching_products(name)
-        if len(matches) > 1:
-            return {"type": "disambiguation", "suggestions": matches}
-
     # Find or create list
     lists_ref = db.collection("shoppingLists")
     query = lists_ref.where("ownerId", "==", cmd.userId).where("name", "==", list_name).limit(1).get()
@@ -262,19 +257,18 @@ async def process_voice_command(cmd: VoiceCommand) -> dict:
     else:
         list_id = query[0].id
 
-    # Add products
+    # Add products directly (no disambiguation)
     added = []
     for raw_name in product_names:
-        matches = find_matching_products(raw_name)
-        resolved = matches[0] if len(matches) == 1 else raw_name.strip()
+        name = raw_name.strip()
         db.collection("shoppingLists").document(list_id).collection("products").document().set({
-            "name": resolved, "quantity": cmd.quantity or 1, "unit": cmd.unit or "unidad",
+            "name": name, "quantity": cmd.quantity or 1, "unit": cmd.unit or "Unidad",
             "isPurchased": False, "lastModifiedBy": cmd.userId, "lastModifiedAt": firestore.SERVER_TIMESTAMP
         })
-        added.append(resolved)
+        added.append(name)
 
     db.collection("shoppingLists").document(list_id).update({"updatedAt": firestore.SERVER_TIMESTAMP})
 
     if len(added) == 1:
-        return {"type": "success", "message": f"Se agregó {added[0]} a la lista \"{list_name}\"."}
-    return {"type": "success", "message": f"Se agregaron {len(added)} productos a la lista \"{list_name}\"."}
+        return {"type": "success", "message": f"Listo, agregué {added[0]} a la lista {list_name}."}
+    return {"type": "success", "message": f"Listo, agregué {len(added)} productos a la lista {list_name}."}
