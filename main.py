@@ -217,7 +217,7 @@ async def process_alexa_skill(body: dict):
         return alexa_response("Decime qué producto querés agregar.", False)
 
     slots = req.get("intent", {}).get("slots", {})
-    user_id = body.get("session", {}).get("user", {}).get("userId", "")
+    user_id = get_uid_from_alexa_request(body)
     product_name = slots.get("product", {}).get("value", "")
     if not product_name:
         return alexa_response("No entendí qué producto querés agregar.", True)
@@ -272,3 +272,79 @@ async def process_voice_command(cmd: VoiceCommand) -> dict:
     if len(added) == 1:
         return {"type": "success", "message": f"Listo, agregué {added[0]} a la lista {list_name}."}
     return {"type": "success", "message": f"Listo, agregué {len(added)} productos a la lista {list_name}."}
+
+
+# ─── Alexa Account Linking (OAuth-like flow) ──────────────────────────────────
+from fastapi import Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+import urllib.parse
+
+# Simple token store: maps access_token -> firebase_uid
+_token_store: dict[str, str] = {}
+
+@app.get("/auth/login", response_class=HTMLResponse)
+async def auth_login_page(
+    redirect_uri: str = "",
+    state: str = "",
+    client_id: str = "",
+    response_type: str = ""
+):
+    """Login page shown to user during Alexa Account Linking."""
+    return f"""
+    <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>body{{font-family:sans-serif;max-width:400px;margin:40px auto;padding:20px}}
+    input{{width:100%;padding:12px;margin:8px 0;box-sizing:border-box;border:1px solid #ccc;border-radius:4px}}
+    button{{width:100%;padding:14px;background:#4CAF50;color:white;border:none;border-radius:4px;font-size:16px;cursor:pointer}}
+    h2{{text-align:center}}</style></head>
+    <body><h2>🛒 Uh no había</h2><p>Iniciá sesión para vincular tu cuenta con Alexa</p>
+    <form method="post" action="/auth/token">
+    <input type="hidden" name="redirect_uri" value="{redirect_uri}">
+    <input type="hidden" name="state" value="{state}">
+    <input type="email" name="email" placeholder="Correo electrónico" required>
+    <input type="password" name="password" placeholder="Contraseña" required>
+    <button type="submit">Vincular cuenta</button>
+    </form></body></html>
+    """
+
+@app.post("/auth/token")
+async def auth_token(
+    redirect_uri: str = Form(""),
+    state: str = Form(""),
+    email: str = Form(""),
+    password: str = Form("")
+):
+    """Authenticate user and redirect back to Alexa with access token."""
+    try:
+        # Verify credentials with Firebase Auth REST API
+        api_key = "AIzaSyA0ZD7YqjNV0Uu7cFg35wFQ8kKQRtFTHkw"
+        async with httpx.AsyncClient() as client:
+            r = await client.post(
+                f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}",
+                json={"email": email, "password": password, "returnSecureToken": True}
+            )
+            if r.status_code != 200:
+                return HTMLResponse("<h2>Error: credenciales inválidas</h2><a href='javascript:history.back()'>Volver</a>")
+            data = r.json()
+            uid = data["localId"]
+            token = data["idToken"][:64]  # Use first 64 chars as access token
+
+        _token_store[token] = uid
+
+        # Redirect back to Alexa with the token
+        params = urllib.parse.urlencode({
+            "access_token": token,
+            "token_type": "Bearer",
+            "state": state
+        })
+        return RedirectResponse(url=f"{redirect_uri}#{params}", status_code=302)
+    except Exception as e:
+        return HTMLResponse(f"<h2>Error: {e}</h2><a href='javascript:history.back()'>Volver</a>")
+
+
+def get_uid_from_alexa_request(body: dict) -> str:
+    """Extract Firebase UID from Alexa request using the access token."""
+    token = body.get("session", {}).get("user", {}).get("accessToken", "")
+    if token and token in _token_store:
+        return _token_store[token]
+    # Fallback to Alexa userId
+    return body.get("session", {}).get("user", {}).get("userId", "")
