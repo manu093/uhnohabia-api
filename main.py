@@ -330,19 +330,13 @@ async def auth_token(
 
         _token_store[token] = uid
 
-        # Redirect back to Alexa with the token using JS redirect (more compatible)
-        params = urllib.parse.urlencode({
-            "access_token": token,
-            "token_type": "Bearer",
-            "state": state
-        })
-        redirect_url = f"{redirect_uri}#{params}"
-        return HTMLResponse(f"""
-        <html><body>
-        <p>Vinculando cuenta...</p>
-        <script>window.location.href = "{redirect_url}";</script>
-        </body></html>
-        """)
+        # Must use client-side redirect because HTTP 302 doesn't preserve URL fragments
+        fragment = f"access_token={token}&token_type=Bearer&state={urllib.parse.quote(state, safe='')}"
+        redirect_url = redirect_uri + "#" + fragment
+        return HTMLResponse(
+            f'<html><body><script>window.location.replace("{redirect_url}");</script></body></html>',
+            status_code=200
+        )
     except Exception as e:
         return HTMLResponse(f"<h2>Error: {e}</h2><a href='javascript:history.back()'>Volver</a>")
 
