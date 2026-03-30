@@ -384,3 +384,95 @@ def get_uid_from_alexa_request(body: dict) -> str:
         return _token_store[token]
     # Default user - hardcoded for now until Account Linking works
     return "P46tbJbTrzQHGocCqI4CgRJwHah2"
+
+
+# ─── Smart Price Comparison (search by product name) ──────────────────────────
+
+@app.get("/compare")
+async def compare_prices(
+    products: str = Query(..., description="Nombres de productos separados por coma"),
+    lat: float = Query(...), lng: float = Query(...),
+    radius_km: float = Query(30.0),
+):
+    """
+    Busca productos por nombre en SEPA, encuentra supermercados cercanos,
+    y devuelve precios comparativos.
+    """
+    product_names = [p.strip() for p in products.split(",") if p.strip()]
+    
+    # 1. Get nearby supermarkets
+    async with httpx.AsyncClient(timeout=15.0, headers=SEPA_HEADERS) as client:
+        try:
+            r = await client.get(f"{SEPA_BASE_URL}/sucursales", params={"lat": lat, "lng": lng})
+            r.raise_for_status()
+            data = r.json()
+        except Exception:
+            return {"supermarkets": [], "products": [], "error": "No se pudieron obtener supermercados"}
+
+    supermarkets = []
+    for s in data.get("sucursales", []):
+        s_lat, s_lng = float(s.get("lat", 0)), float(s.get("lng", 0))
+        dist = haversine_km(lat, lng, s_lat, s_lng)
+        if dist <= radius_km:
+            supermarkets.append({
+                "id": str(s.get("id", "")),
+                "name": s.get("comercioRazonSocial", s.get("banderaDescripcion", "?")),
+                "distance_km": round(dist, 2)
+            })
+    supermarkets.sort(key=lambda x: x["distance_km"])
+    supermarkets = supermarkets[:10]  # Top 10 closest
+
+    if not supermarkets:
+        return {"supermarkets": [], "products": [], "error": "No hay supermercados cercanos"}
+
+    sucursal_ids = [s["id"] for s in supermarkets]
+
+    # 2. Search each product in SEPA and get prices
+    results = []
+    async with httpx.AsyncClient(timeout=15.0, headers=SEPA_HEADERS) as client:
+        for product_name in product_names:
+            try:
+                # Search product
+                r = await client.get(f"{SEPA_BASE_URL}/productos",
+                    params={"string": product_name, "lat": lat, "lng": lng})
+                r.raise_for_status()
+                search_data = r.json()
+                
+                productos = search_data.get("productos", search_data if isinstance(search_data, list) else [])
+                if not productos:
+                    results.append({"name": product_name, "prices": [], "sepa_name": None})
+                    continue
+
+                # Take first match
+                sepa_product = productos[0]
+                sepa_id = str(sepa_product.get("id", ""))
+                sepa_name = sepa_product.get("nombre", product_name)
+
+                # Get prices at nearby supermarkets
+                r2 = await client.get(f"{SEPA_BASE_URL}/producto",
+                    params={"id_producto": sepa_id, "array_sucursales": ",".join(sucursal_ids)})
+                r2.raise_for_status()
+                price_data = r2.json()
+
+                precios = price_data.get("precios", price_data if isinstance(price_data, list) else [])
+                
+                product_prices = []
+                for p in precios:
+                    product_prices.append({
+                        "supermarket_id": str(p.get("sucursal_id", "")),
+                        "price": str(p.get("precio", "0")),
+                        "date": p.get("fecha", "")
+                    })
+
+                results.append({
+                    "name": product_name,
+                    "sepa_name": sepa_name,
+                    "prices": product_prices
+                })
+            except Exception:
+                results.append({"name": product_name, "prices": [], "sepa_name": None})
+
+    return {
+        "supermarkets": supermarkets,
+        "products": results
+    }
