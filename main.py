@@ -326,7 +326,7 @@ async def auth_token(
                 return HTMLResponse("<h2>Error: credenciales inválidas</h2><a href='javascript:history.back()'>Volver</a>")
             data = r.json()
             uid = data["localId"]
-            token = data["idToken"][:64]  # Use first 64 chars as access token
+            token = uuid.uuid4().hex  # Simple 32-char hex token
 
         _token_store[token] = uid
 
