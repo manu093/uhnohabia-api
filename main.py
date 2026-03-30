@@ -242,36 +242,61 @@ async def process_voice_command(cmd: VoiceCommand) -> dict:
     if not cmd.productName.strip():
         return {"type": "error", "message": "No se especificó un producto."}
 
-    list_name = (cmd.listName or "Mi Lista").strip()
+    list_name = (cmd.listName or "").strip()
     product_names = parse_multiple_products(cmd.productName)
 
-    # Find or create list
+    # Find existing list: if no name specified, use the first list of the user
     lists_ref = db.collection("shoppingLists")
-    query = lists_ref.where("ownerId", "==", cmd.userId).where("name", "==", list_name).limit(1).get()
+    if list_name:
+        query = lists_ref.where("ownerId", "==", cmd.userId).where("name", "==", list_name).limit(1).get()
+    else:
+        query = lists_ref.where("ownerId", "==", cmd.userId).limit(1).get()
 
     if not query:
+        actual_name = list_name or "Mi Lista"
         new_ref = lists_ref.document()
-        new_ref.set({"name": list_name, "ownerId": cmd.userId, "members": [cmd.userId],
+        new_ref.set({"name": actual_name, "ownerId": cmd.userId, "members": [cmd.userId],
                      "isShared": False, "createdAt": firestore.SERVER_TIMESTAMP, "updatedAt": firestore.SERVER_TIMESTAMP})
         list_id = new_ref.id
     else:
         list_id = query[0].id
+        actual_name = query[0].to_dict().get("name", "Mi Lista")
 
-    # Add products directly (no disambiguation)
+    # Search for existing product data in user's lists to copy emoji/category
+    def find_existing_product(name):
+        try:
+            user_lists = lists_ref.where("ownerId", "==", cmd.userId).get()
+            for lst in user_lists:
+                products = db.collection("shoppingLists").document(lst.id).collection("products").where("name", "==", name).limit(1).get()
+                if products:
+                    return products[0].to_dict()
+        except Exception:
+            pass
+        return {}
+
     added = []
     for raw_name in product_names:
         name = raw_name.strip()
-        db.collection("shoppingLists").document(list_id).collection("products").document().set({
-            "name": name, "quantity": cmd.quantity or 1, "unit": cmd.unit or "Unidad",
-            "isPurchased": False, "lastModifiedBy": cmd.userId, "lastModifiedAt": firestore.SERVER_TIMESTAMP
-        })
+        existing = find_existing_product(name)
+        product_data = {
+            "name": name, "quantity": cmd.quantity or 1,
+            "unit": existing.get("unit", cmd.unit or "Unidad"),
+            "categoryId": existing.get("categoryId", ""),
+            "categoryName": existing.get("categoryName", "Otros"),
+            "categoryEmoji": existing.get("categoryEmoji", "📦"),
+            "emoji": existing.get("emoji", ""),
+            "isPurchased": False, "lastModifiedBy": cmd.userId,
+            "lastModifiedAt": firestore.SERVER_TIMESTAMP
+        }
+        db.collection("shoppingLists").document(list_id).collection("products").document().set(product_data)
         added.append(name)
 
     db.collection("shoppingLists").document(list_id).update({"updatedAt": firestore.SERVER_TIMESTAMP})
 
     if len(added) == 1:
-        return {"type": "success", "message": f"Listo, agregué {added[0]} a la lista {list_name}."}
-    return {"type": "success", "message": f"Listo, agregué {len(added)} productos a la lista {list_name}."}
+        return {"type": "success", "message": f"Listo, agregué {added[0]} a la lista {actual_name}."}
+    return {"type": "success", "message": f"Listo, agregué {len(added)} productos a la lista {actual_name}."}
+
 
 
 # ─── Alexa Account Linking (OAuth-like flow) ──────────────────────────────────
