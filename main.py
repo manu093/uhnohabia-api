@@ -346,5 +346,5 @@ def get_uid_from_alexa_request(body: dict) -> str:
     token = body.get("session", {}).get("user", {}).get("accessToken", "")
     if token and token in _token_store:
         return _token_store[token]
-    # Fallback to Alexa userId
-    return body.get("session", {}).get("user", {}).get("userId", "")
+    # Default user - hardcoded for now until Account Linking works
+    return "P46tbJbTrzQHGocCqI4CgRJwHah2"
