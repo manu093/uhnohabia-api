@@ -350,7 +350,7 @@ async def auth_token(
     """Authenticate user and redirect back to Alexa with access token."""
     try:
         # Verify credentials with Firebase Auth REST API
-        api_key = "AIzaSyA0ZD7YqjNV0Uu7cFg35wFQ8kKQRtFTHkw"
+        api_key = os.environ.get("FIREBASE_API_KEY", "")
         async with httpx.AsyncClient() as client:
             r = await client.post(
                 f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}",
