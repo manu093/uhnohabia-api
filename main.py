@@ -269,23 +269,25 @@ async def process_voice_command(cmd: VoiceCommand) -> dict:
     # Search for existing product data: first in knownProducts collection, then in user's lists
     def find_existing_product(name):
         try:
-            # Search in knownProducts collection (synced from app)
-            known = db.collection("knownProducts").where("ownerId", "==", cmd.userId).where("name", "==", name).limit(1).get()
-            if known:
-                return known[0].to_dict()
+            # Try exact match first, then capitalized
+            for search_name in [name, name.capitalize(), name.title(), name.lower()]:
+                known = db.collection("knownProducts").where("ownerId", "==", cmd.userId).where("name", "==", search_name).limit(1).get()
+                if known:
+                    return known[0].to_dict()
             # Fallback: search in user's existing lists
             user_lists = lists_ref.where("ownerId", "==", cmd.userId).get()
             for lst in user_lists:
-                products = db.collection("shoppingLists").document(lst.id).collection("products").where("name", "==", name).limit(1).get()
-                if products:
-                    return products[0].to_dict()
+                for search_name in [name, name.capitalize(), name.title()]:
+                    products = db.collection("shoppingLists").document(lst.id).collection("products").where("name", "==", search_name).limit(1).get()
+                    if products:
+                        return products[0].to_dict()
         except Exception:
             pass
         return {}
 
     added = []
     for raw_name in product_names:
-        name = raw_name.strip()
+        name = raw_name.strip().capitalize()
         existing = find_existing_product(name)
         product_data = {
             "name": name, "quantity": cmd.quantity or 1,
