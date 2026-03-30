@@ -213,14 +213,19 @@ async def process_alexa_skill(body: dict):
     if not _firebase_initialized:
         return alexa_response("Servicio de voz no disponible.", True)
     req = body.get("request", {})
+    
+    # LaunchRequest: user said "abrí super"
+    if req.get("type") == "LaunchRequest":
+        return alexa_response("¿Qué producto querés agregar?", False)
+    
     if req.get("type") != "IntentRequest":
-        return alexa_response("Decime qué producto querés agregar.", False)
+        return alexa_response("¿Qué producto querés agregar?", False)
 
     slots = req.get("intent", {}).get("slots", {})
     user_id = get_uid_from_alexa_request(body)
     product_name = slots.get("product", {}).get("value", "")
     if not product_name:
-        return alexa_response("No entendí qué producto querés agregar.", True)
+        return alexa_response("No entendí. ¿Qué producto querés agregar?", False)
 
     cmd = VoiceCommand(
         userId=user_id, productName=product_name,
@@ -229,9 +234,8 @@ async def process_alexa_skill(body: dict):
         unit=slots.get("unit", {}).get("value")
     )
     result = await process_voice_command(cmd)
-    if result["type"] == "disambiguation":
-        return alexa_response(f"¿Cuál producto querés agregar? {', '.join(result['suggestions'])}", False)
-    return alexa_response(result["message"], True)
+    # After adding, ask if they want to add more
+    return alexa_response(result["message"] + " ¿Querés agregar algo más?", False)
 
 
 def alexa_response(text: str, end_session: bool) -> dict:
@@ -262,9 +266,14 @@ async def process_voice_command(cmd: VoiceCommand) -> dict:
         list_id = query[0].id
         actual_name = query[0].to_dict().get("name", "Mi Lista")
 
-    # Search for existing product data in user's lists to copy emoji/category
+    # Search for existing product data: first in knownProducts collection, then in user's lists
     def find_existing_product(name):
         try:
+            # Search in knownProducts collection (synced from app)
+            known = db.collection("knownProducts").where("ownerId", "==", cmd.userId).where("name", "==", name).limit(1).get()
+            if known:
+                return known[0].to_dict()
+            # Fallback: search in user's existing lists
             user_lists = lists_ref.where("ownerId", "==", cmd.userId).get()
             for lst in user_lists:
                 products = db.collection("shoppingLists").document(lst.id).collection("products").where("name", "==", name).limit(1).get()
