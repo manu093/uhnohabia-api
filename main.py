@@ -642,7 +642,7 @@ async def compare_prices(
     }
 
 
-# ─── Precios Claros Catalog (Scraper + Postgres/Neon) ─────────────────────────
+# ─── Supermarket Catalog (VTEX Scraper + Postgres/Neon) ───────────────────────
 import psycopg2
 from psycopg2.extras import execute_values
 import threading, time as _time, requests as _requests
@@ -652,196 +652,173 @@ _DB_URL = os.environ.get("DATABASE_URL", "")
 def _pg():
     return psycopg2.connect(_DB_URL) if _DB_URL else None
 
+# Supermarkets with VTEX APIs
+_VTEX_STORES = {
+    "DIA": "https://diaonline.supermercadosdia.com.ar",
+    "Jumbo": "https://www.jumbo.com.ar",
+    "Disco": "https://www.disco.com.ar",
+    "Carrefour": "https://www.carrefour.com.ar",
+}
+
+# More specific search terms for better results
+_SCRAPE_TERMS = [
+    "leche entera", "leche descremada", "leche larga vida",
+    "arroz largo fino", "arroz integral", "fideos spaghetti", "fideos tirabuzón",
+    "aceite girasol", "aceite oliva", "harina 000", "azúcar",
+    "yerba mate", "café instantáneo", "té en saquitos",
+    "galletitas dulces", "galletitas saladas", "pan lactal", "pan integral",
+    "manteca", "queso cremoso", "queso rallado", "yogur natural", "yogur frutilla",
+    "huevos", "pollo entero", "pechuga pollo", "carne picada", "nalga",
+    "jamón cocido", "salchichas", "atún en lata",
+    "tomate perita", "puré de tomate", "mayonesa", "mostaza", "ketchup", "sal fina",
+    "cerveza lata", "vino tinto", "gaseosa cola", "agua mineral", "jugo naranja",
+    "detergente líquido", "jabón en polvo", "shampoo", "papel higiénico",
+    "lavandina", "desodorante", "pasta dental", "pañales",
+    "mermelada", "dulce de leche", "cereales", "avena", "polenta", "lentejas",
+    "leche chocolatada", "queso untable", "crema de leche",
+]
+
 def _init_catalog_db():
-    if not _DB_URL:
-        return
-    conn = _pg()
-    cur = conn.cursor()
+    if not _DB_URL: return
+    conn = _pg(); cur = conn.cursor()
     for sql in [
-        """CREATE TABLE IF NOT EXISTS zonas (id SERIAL PRIMARY KEY, nombre TEXT UNIQUE NOT NULL, lat DOUBLE PRECISION NOT NULL, lng DOUBLE PRECISION NOT NULL, radio_km DOUBLE PRECISION NOT NULL DEFAULT 10.0)""",
-        """CREATE TABLE IF NOT EXISTS cat_sucursales (id TEXT PRIMARY KEY, cadena TEXT NOT NULL, nombre TEXT, direccion TEXT, localidad TEXT, provincia TEXT, lat TEXT, lng TEXT, zona_id INTEGER REFERENCES zonas(id), updated_at TIMESTAMP DEFAULT NOW())""",
-        """CREATE TABLE IF NOT EXISTS cat_productos (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, marca TEXT, presentacion TEXT, nombre_lower TEXT, marca_lower TEXT, updated_at TIMESTAMP DEFAULT NOW())""",
-        """CREATE TABLE IF NOT EXISTS cat_precios (id TEXT PRIMARY KEY, producto_id TEXT REFERENCES cat_productos(id) ON DELETE CASCADE, sucursal_id TEXT REFERENCES cat_sucursales(id) ON DELETE CASCADE, producto_nombre TEXT, cadena TEXT, precio DOUBLE PRECISION NOT NULL, fecha TEXT, updated_at TIMESTAMP DEFAULT NOW())""",
-        """CREATE TABLE IF NOT EXISTS scraper_runs (id SERIAL PRIMARY KEY, zona_id INTEGER, ts TIMESTAMP DEFAULT NOW(), duration DOUBLE PRECISION, products INTEGER, prices INTEGER)""",
-        "CREATE INDEX IF NOT EXISTS idx_cp_nombre ON cat_productos(nombre_lower)",
-        "CREATE INDEX IF NOT EXISTS idx_cp_marca ON cat_productos(marca_lower)",
-        "CREATE INDEX IF NOT EXISTS idx_cpr_prod ON cat_precios(producto_id)",
-        "CREATE INDEX IF NOT EXISTS idx_cpr_suc ON cat_precios(sucursal_id)",
-        "CREATE INDEX IF NOT EXISTS idx_cpr_cadena ON cat_precios(cadena)",
-        "CREATE INDEX IF NOT EXISTS idx_cs_zona ON cat_sucursales(zona_id)",
-        "CREATE INDEX IF NOT EXISTS idx_cs_loc ON cat_sucursales(localidad)",
+        "CREATE TABLE IF NOT EXISTS zonas (id SERIAL PRIMARY KEY, nombre TEXT UNIQUE NOT NULL, lat DOUBLE PRECISION NOT NULL, lng DOUBLE PRECISION NOT NULL, radio_km DOUBLE PRECISION NOT NULL DEFAULT 10.0)",
+        "CREATE TABLE IF NOT EXISTS vtex_productos (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, marca TEXT, presentacion TEXT, nombre_lower TEXT, marca_lower TEXT, cadena TEXT NOT NULL, precio DOUBLE PRECISION, precio_lista DOUBLE PRECISION, imagen TEXT, updated_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS scraper_runs (id SERIAL PRIMARY KEY, zona_id INTEGER, ts TIMESTAMP DEFAULT NOW(), duration DOUBLE PRECISION, products INTEGER, prices INTEGER)",
+        "CREATE INDEX IF NOT EXISTS idx_vp_nombre ON vtex_productos(nombre_lower)",
+        "CREATE INDEX IF NOT EXISTS idx_vp_marca ON vtex_productos(marca_lower)",
+        "CREATE INDEX IF NOT EXISTS idx_vp_cadena ON vtex_productos(cadena)",
     ]:
         cur.execute(sql)
     cur.execute("INSERT INTO zonas (nombre,lat,lng,radio_km) VALUES ('Zona Sur GBA',-34.83,-58.39,12.0) ON CONFLICT (nombre) DO NOTHING")
     conn.commit(); cur.close(); conn.close()
 
-_SCRAPE_TERMS = [
-    "leche","arroz","fideos","aceite","harina","azucar","yerba","cafe","te",
-    "galletitas","pan","manteca","queso","yogur","huevos","pollo","carne",
-    "jamon","salchichas","atun","tomate","mayonesa","mostaza","ketchup","sal",
-    "cerveza","vino","gaseosa","agua","jugo","detergente","jabon","shampoo",
-    "papel higienico","lavandina","desodorante","pasta dental","pañales",
-    "pure de tomate","mermelada","dulce de leche","cereales","avena","polenta","lentejas",
-]
 
-def _sepa_get(url, params=None):
-    for attempt in range(3):
-        try:
-            r = _requests.get(url, params=params, headers={"User-Agent":"UhNoHabia/1.0"}, timeout=15)
-            if r.status_code == 200: return r.json()
-        except: pass
-        _time.sleep(1*(attempt+1))
-    return None
+def _vtex_search(base_url, query, _from=0, _to=49):
+    """Search products via VTEX API."""
+    try:
+        r = _requests.get(
+            f"{base_url}/api/catalog_system/pub/products/search/{query}",
+            params={"_from": _from, "_to": _to},
+            headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
+            timeout=15
+        )
+        if r.status_code in (200, 206):
+            return r.json() if isinstance(r.json(), list) else []
+    except: pass
+    return []
 
 def _run_catalog_scraper():
     if not _DB_URL: return
-    import logging; log = logging.getLogger("scraper"); log.info("=== Catalog scraper start ===")
+    import logging; log = logging.getLogger("scraper")
+    log.info("=== VTEX Catalog scraper start ===")
     start = _time.time()
-    conn = _pg(); cur = conn.cursor()
-    cur.execute("SELECT id,nombre,lat,lng,radio_km FROM zonas"); zonas = cur.fetchall()
-    cur.close(); conn.close()
-    tp, tpr = 0, 0
-    for zid, zname, zlat, zlng, zrad in zonas:
-        # Paginated sucursales
-        srows, offset = [], 0
-        while True:
-            d = _sepa_get(f"{SEPA_BASE_URL}/sucursales", {"lat":str(zlat),"lng":str(zlng),"offset":str(offset),"limit":"30"})
-            if not d or not d.get("sucursales"): break
-            for s in d["sucursales"]:
-                sid,slat,slng2 = s.get("id",""),s.get("lat",""),s.get("lng","")
-                if not sid or not slat or not slng2: continue
-                try: dist = haversine_km(zlat,zlng,float(slat),float(slng2))
-                except: continue
-                if dist <= zrad:
-                    srows.append((sid,s.get("banderaDescripcion",s.get("comercioRazonSocial","")),s.get("sucursalNombre",""),s.get("direccion",""),s.get("localidad",""),s.get("provincia",""),slat,slng2,zid))
-            total = d.get("total",0); offset += 30
-            if offset >= total: break
-            _time.sleep(0.3)
-        if srows:
-            cn = _pg(); cr = cn.cursor()
-            execute_values(cr, "INSERT INTO cat_sucursales (id,cadena,nombre,direccion,localidad,provincia,lat,lng,zona_id) VALUES %s ON CONFLICT (id) DO UPDATE SET cadena=EXCLUDED.cadena,nombre=EXCLUDED.nombre,direccion=EXCLUDED.direccion,localidad=EXCLUDED.localidad,updated_at=NOW()", srows)
-            cn.commit(); cr.close(); cn.close()
-        log.info(f"Zone {zname}: {len(srows)} sucursales")
-        # Products + prices
+    total = 0
+
+    for cadena, base_url in _VTEX_STORES.items():
+        log.info(f"Scraping {cadena}...")
+        store_count = 0
         for term in _SCRAPE_TERMS:
-            pd = _sepa_get(f"{SEPA_BASE_URL}/productos", {"string":term,"lat":str(zlat),"lng":str(zlng)})
-            if not pd or not pd.get("productos"): continue
-            prods = pd["productos"][:25]
-            prows = [(p["id"],p.get("nombre",""),p.get("marca",""),p.get("presentacion",""),p.get("nombre","").lower(),p.get("marca","").lower()) for p in prods if p.get("id")]
-            if prows:
-                cn = _pg(); cr = cn.cursor()
-                execute_values(cr, "INSERT INTO cat_productos (id,nombre,marca,presentacion,nombre_lower,marca_lower) VALUES %s ON CONFLICT (id) DO UPDATE SET nombre=EXCLUDED.nombre,marca=EXCLUDED.marca,presentacion=EXCLUDED.presentacion,nombre_lower=EXCLUDED.nombre_lower,marca_lower=EXCLUDED.marca_lower,updated_at=NOW()", prows)
-                cn.commit(); cr.close(); cn.close()
-                tp += len(prows)
-            for p in prods:
-                pid = p.get("id","")
+            products = _vtex_search(base_url, term)
+            if not products:
+                continue
+            rows = []
+            for p in products:
+                pid = p.get("productId", "")
                 if not pid: continue
-                prd = _sepa_get(f"{SEPA_BASE_URL}/producto", {"id_producto":pid,"lat":str(zlat),"lng":str(zlng)})
-                if not prd or not prd.get("sucursales"): continue
-                price_rows = []
-                for sc in prd["sucursales"]:
-                    pp = sc.get("preciosProducto",{})
-                    pv = pp.get("precioLista")
-                    if not pv: continue
-                    dist2 = sc.get("distanciaNumero",999)
-                    if dist2 > zrad: continue
-                    fsid = f"{sc.get('comercioId','')}-{sc.get('banderaId','')}-{sc.get('id','')}"
-                    # Ensure sucursal exists
-                    cn = _pg(); cr = cn.cursor()
-                    cr.execute("INSERT INTO cat_sucursales (id,cadena,nombre,direccion,localidad,provincia,lat,lng,zona_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO NOTHING",
-                        (fsid,sc.get("banderaDescripcion",""),sc.get("sucursalNombre",""),sc.get("direccion",""),sc.get("localidad",""),sc.get("provincia",""),sc.get("lat",""),sc.get("lng",""),zid))
-                    cn.commit(); cr.close(); cn.close()
-                    price_rows.append((f"{pid}_{fsid}",pid,fsid,p.get("nombre",""),sc.get("banderaDescripcion",""),float(pv),""))
-                if price_rows:
-                    cn = _pg(); cr = cn.cursor()
-                    execute_values(cr, "INSERT INTO cat_precios (id,producto_id,sucursal_id,producto_nombre,cadena,precio,fecha) VALUES %s ON CONFLICT (id) DO UPDATE SET precio=EXCLUDED.precio,cadena=EXCLUDED.cadena,updated_at=NOW()", price_rows)
-                    cn.commit(); cr.close(); cn.close()
-                    tpr += len(price_rows)
-                _time.sleep(0.3)
-            _time.sleep(0.3)
-        cn = _pg(); cr = cn.cursor()
-        cr.execute("INSERT INTO scraper_runs (zona_id,duration,products,prices) VALUES (%s,%s,%s,%s)", (zid,_time.time()-start,tp,tpr))
-        cn.commit(); cr.close(); cn.close()
-    log.info(f"=== Catalog scraper done: {tp} products, {tpr} prices in {_time.time()-start:.0f}s ===")
+                name = p.get("productName", "")
+                brand = p.get("brand", "")
+                # Get price from first item/seller
+                price, list_price, image = 0.0, 0.0, ""
+                try:
+                    item = p["items"][0]
+                    offer = item["sellers"][0]["commertialOffer"]
+                    price = float(offer.get("Price", 0))
+                    list_price = float(offer.get("ListPrice", price))
+                    images = item.get("images", [])
+                    image = images[0]["imageUrl"] if images else ""
+                except: pass
+                if price <= 0: continue
+                # Extract presentacion from name or item
+                presentacion = ""
+                try:
+                    presentacion = p["items"][0].get("measurementUnit", "") + " " + str(p["items"][0].get("unitMultiplier", ""))
+                except: pass
+                doc_id = f"{cadena}_{pid}"
+                rows.append((doc_id, name, brand, presentacion.strip(), name.lower(), brand.lower(), cadena, price, list_price, image))
+            if rows:
+                cn = _pg(); cr = cn.cursor()
+                execute_values(cr, """
+                    INSERT INTO vtex_productos (id,nombre,marca,presentacion,nombre_lower,marca_lower,cadena,precio,precio_lista,imagen,updated_at)
+                    VALUES %s ON CONFLICT (id) DO UPDATE SET
+                    nombre=EXCLUDED.nombre,marca=EXCLUDED.marca,precio=EXCLUDED.precio,
+                    precio_lista=EXCLUDED.precio_lista,imagen=EXCLUDED.imagen,
+                    nombre_lower=EXCLUDED.nombre_lower,marca_lower=EXCLUDED.marca_lower,updated_at=NOW()
+                """, rows)
+                cn.commit(); cr.close(); cn.close()
+                store_count += len(rows)
+            _time.sleep(0.5)  # Rate limit
+        total += store_count
+        log.info(f"  {cadena}: {store_count} products")
 
-# Catalog API endpoints - uses cat_* tables (from Koyeb scraper) or fallback to local scraper tables
-def _tbl(base):
-    """Return table name: try cat_ prefix first, fallback to non-prefixed."""
-    if not _DB_URL: return base
-    try:
-        cn = _pg(); cr = cn.cursor()
-        cr.execute(f"SELECT COUNT(*) FROM cat_{base}"); n = cr.fetchone()[0]; cr.close(); cn.close()
-        return f"cat_{base}" if n > 0 else base
-    except:
-        return base
+    # Save run status
+    cn = _pg(); cr = cn.cursor()
+    cr.execute("INSERT INTO scraper_runs (duration,products,prices) VALUES (%s,%s,%s)", (_time.time()-start, total, total))
+    cn.commit(); cr.close(); cn.close()
+    log.info(f"=== VTEX scraper done: {total} products in {_time.time()-start:.0f}s ===")
 
+# Catalog API endpoints
 @app.get("/catalog/productos")
-def catalog_search(q: str = Query(..., min_length=2), marca: str = Query(None), limit: int = Query(30, le=100)):
+def catalog_search(q: str = Query(..., min_length=2), marca: str = Query(None), cadena: str = Query(None), limit: int = Query(30, le=100)):
     if not _DB_URL: return []
-    tp = _tbl("productos")
     cn = _pg(); cr = cn.cursor()
-    ql = f"%{q.lower().strip()}%"
+    sql = "SELECT id,nombre,marca,presentacion,cadena,precio,precio_lista,imagen FROM vtex_productos WHERE nombre_lower LIKE %s"
+    params = [f"%{q.lower().strip()}%"]
     if marca:
-        cr.execute(f"SELECT id,nombre,marca,presentacion FROM {tp} WHERE nombre_lower LIKE %s AND marca_lower LIKE %s ORDER BY nombre LIMIT %s", (ql,f"%{marca.lower().strip()}%",limit))
-    else:
-        cr.execute(f"SELECT id,nombre,marca,presentacion FROM {tp} WHERE nombre_lower LIKE %s ORDER BY nombre LIMIT %s", (ql,limit))
-    rows = cr.fetchall(); cr.close(); cn.close()
-    return [{"id":r[0],"nombre":r[1],"marca":r[2],"presentacion":r[3]} for r in rows]
-
-@app.get("/catalog/precios/{producto_id}")
-def catalog_prices(producto_id: str, cadena: str = Query(None), localidad: str = Query(None)):
-    if not _DB_URL: return []
-    tpr = _tbl("precios"); ts = _tbl("sucursales")
-    cn = _pg(); cr = cn.cursor()
-    sql = f"SELECT p.id,p.producto_id,p.sucursal_id,p.producto_nombre,p.cadena,p.precio,p.fecha,s.nombre,s.direccion,s.localidad FROM {tpr} p JOIN {ts} s ON p.sucursal_id=s.id WHERE p.producto_id=%s"
-    params = [producto_id]
-    if cadena: sql += " AND LOWER(p.cadena) LIKE %s"; params.append(f"%{cadena.lower()}%")
-    if localidad: sql += " AND LOWER(s.localidad) LIKE %s"; params.append(f"%{localidad.lower()}%")
-    sql += " ORDER BY p.precio ASC LIMIT 100"
+        sql += " AND marca_lower LIKE %s"; params.append(f"%{marca.lower().strip()}%")
+    if cadena:
+        sql += " AND cadena = %s"; params.append(cadena)
+    sql += " ORDER BY precio ASC LIMIT %s"; params.append(limit)
     cr.execute(sql, params); rows = cr.fetchall(); cr.close(); cn.close()
-    return [{"id":r[0],"productoId":r[1],"sucursalId":r[2],"productoNombre":r[3],"cadena":r[4],"precio":r[5],"fecha":r[6],"sucursalNombre":r[7],"direccion":r[8],"localidad":r[9]} for r in rows]
+    return [{"id":r[0],"nombre":r[1],"marca":r[2],"presentacion":r[3],"cadena":r[4],"precio":r[5],"precioLista":r[6],"imagen":r[7]} for r in rows]
 
 @app.get("/catalog/cadenas")
 def catalog_cadenas():
     if not _DB_URL: return []
-    ts = _tbl("sucursales")
     cn = _pg(); cr = cn.cursor()
-    cr.execute(f"SELECT DISTINCT cadena FROM {ts} ORDER BY cadena"); rows = cr.fetchall(); cr.close(); cn.close()
+    cr.execute("SELECT DISTINCT cadena FROM vtex_productos ORDER BY cadena"); rows = cr.fetchall(); cr.close(); cn.close()
     return [r[0] for r in rows if r[0]]
 
-@app.get("/catalog/localidades")
-def catalog_localidades():
+@app.get("/catalog/marcas")
+def catalog_marcas(q: str = Query(None)):
     if not _DB_URL: return []
-    ts = _tbl("sucursales")
     cn = _pg(); cr = cn.cursor()
-    cr.execute(f"SELECT DISTINCT localidad FROM {ts} ORDER BY localidad"); rows = cr.fetchall(); cr.close(); cn.close()
+    if q:
+        cr.execute("SELECT DISTINCT marca FROM vtex_productos WHERE marca_lower LIKE %s ORDER BY marca LIMIT 20", (f"%{q.lower()}%",))
+    else:
+        cr.execute("SELECT DISTINCT marca FROM vtex_productos ORDER BY marca LIMIT 50")
+    rows = cr.fetchall(); cr.close(); cn.close()
     return [r[0] for r in rows if r[0]]
-
-@app.get("/catalog/zonas")
-def catalog_zonas():
-    if not _DB_URL: return []
-    cn = _pg(); cr = cn.cursor()
-    cr.execute("SELECT id,nombre,lat,lng,radio_km FROM zonas ORDER BY nombre"); rows = cr.fetchall(); cr.close(); cn.close()
-    return [{"id":r[0],"nombre":r[1],"lat":r[2],"lng":r[3],"radioKm":r[4]} for r in rows]
 
 @app.get("/catalog/status")
 def catalog_status():
-    if not _DB_URL: return {"lastRun":"","totalProducts":0,"totalPrices":0,"totalSucursales":0}
-    tp = _tbl("productos"); tpr = _tbl("precios"); ts = _tbl("sucursales")
+    if not _DB_URL: return {"lastRun":"","totalProducts":0}
     cn = _pg(); cr = cn.cursor()
-    cr.execute("SELECT ts,duration,products,prices FROM scraper_runs ORDER BY ts DESC LIMIT 1"); row = cr.fetchone()
-    cr.execute(f"SELECT COUNT(*) FROM {tp}"); ntp = cr.fetchone()[0]
-    cr.execute(f"SELECT COUNT(*) FROM {tpr}"); ntpr = cr.fetchone()[0]
-    cr.execute(f"SELECT COUNT(*) FROM {ts}"); nts = cr.fetchone()[0]
+    cr.execute("SELECT ts,duration,products FROM scraper_runs ORDER BY ts DESC LIMIT 1"); row = cr.fetchone()
+    cr.execute("SELECT COUNT(*) FROM vtex_productos"); tp = cr.fetchone()[0]
+    cr.execute("SELECT COUNT(DISTINCT cadena) FROM vtex_productos"); nc = cr.fetchone()[0]
     cr.close(); cn.close()
-    return {"lastRun":str(row[0]) if row else "","totalProducts":ntp,"totalPrices":ntpr,"totalSucursales":nts}
+    return {"lastRun":str(row[0]) if row else "","totalProducts":tp,"totalCadenas":nc}
 
 @app.post("/catalog/scrape")
 def catalog_trigger_scrape():
     threading.Thread(target=_run_catalog_scraper, daemon=True).start()
     return {"status":"started"}
 
-# Init DB + schedule scraper on startup
+# Remove old endpoints that are no longer needed
+# /catalog/precios, /catalog/localidades, /catalog/zonas are removed
+# Products now include price directly from VTEX
+
 @app.on_event("startup")
 def _on_startup():
     if _DB_URL:
