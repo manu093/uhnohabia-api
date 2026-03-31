@@ -739,6 +739,8 @@ def _run_catalog_scraper():
                     image = images[0]["imageUrl"] if images else ""
                 except: pass
                 if price <= 0: continue
+                # Filter out invalid prices (Jumbo/Disco API sometimes returns cents instead of pesos)
+                if price < 100: continue
                 # Extract presentacion from name or item
                 presentacion = ""
                 try:
