@@ -764,24 +764,36 @@ def _run_catalog_scraper():
         cn.commit(); cr.close(); cn.close()
     log.info(f"=== Catalog scraper done: {tp} products, {tpr} prices in {_time.time()-start:.0f}s ===")
 
-# Catalog API endpoints
+# Catalog API endpoints - uses cat_* tables (from Koyeb scraper) or fallback to local scraper tables
+def _tbl(base):
+    """Return table name: try cat_ prefix first, fallback to non-prefixed."""
+    if not _DB_URL: return base
+    try:
+        cn = _pg(); cr = cn.cursor()
+        cr.execute(f"SELECT COUNT(*) FROM cat_{base}"); n = cr.fetchone()[0]; cr.close(); cn.close()
+        return f"cat_{base}" if n > 0 else base
+    except:
+        return base
+
 @app.get("/catalog/productos")
 def catalog_search(q: str = Query(..., min_length=2), marca: str = Query(None), limit: int = Query(30, le=100)):
     if not _DB_URL: return []
+    tp = _tbl("productos")
     cn = _pg(); cr = cn.cursor()
     ql = f"%{q.lower().strip()}%"
     if marca:
-        cr.execute("SELECT id,nombre,marca,presentacion FROM cat_productos WHERE nombre_lower LIKE %s AND marca_lower LIKE %s ORDER BY nombre LIMIT %s", (ql,f"%{marca.lower().strip()}%",limit))
+        cr.execute(f"SELECT id,nombre,marca,presentacion FROM {tp} WHERE nombre_lower LIKE %s AND marca_lower LIKE %s ORDER BY nombre LIMIT %s", (ql,f"%{marca.lower().strip()}%",limit))
     else:
-        cr.execute("SELECT id,nombre,marca,presentacion FROM cat_productos WHERE nombre_lower LIKE %s ORDER BY nombre LIMIT %s", (ql,limit))
+        cr.execute(f"SELECT id,nombre,marca,presentacion FROM {tp} WHERE nombre_lower LIKE %s ORDER BY nombre LIMIT %s", (ql,limit))
     rows = cr.fetchall(); cr.close(); cn.close()
     return [{"id":r[0],"nombre":r[1],"marca":r[2],"presentacion":r[3]} for r in rows]
 
 @app.get("/catalog/precios/{producto_id}")
 def catalog_prices(producto_id: str, cadena: str = Query(None), localidad: str = Query(None)):
     if not _DB_URL: return []
+    tpr = _tbl("precios"); ts = _tbl("sucursales")
     cn = _pg(); cr = cn.cursor()
-    sql = "SELECT p.id,p.producto_id,p.sucursal_id,p.producto_nombre,p.cadena,p.precio,p.fecha,s.nombre,s.direccion,s.localidad FROM cat_precios p JOIN cat_sucursales s ON p.sucursal_id=s.id WHERE p.producto_id=%s"
+    sql = f"SELECT p.id,p.producto_id,p.sucursal_id,p.producto_nombre,p.cadena,p.precio,p.fecha,s.nombre,s.direccion,s.localidad FROM {tpr} p JOIN {ts} s ON p.sucursal_id=s.id WHERE p.producto_id=%s"
     params = [producto_id]
     if cadena: sql += " AND LOWER(p.cadena) LIKE %s"; params.append(f"%{cadena.lower()}%")
     if localidad: sql += " AND LOWER(s.localidad) LIKE %s"; params.append(f"%{localidad.lower()}%")
@@ -792,15 +804,17 @@ def catalog_prices(producto_id: str, cadena: str = Query(None), localidad: str =
 @app.get("/catalog/cadenas")
 def catalog_cadenas():
     if not _DB_URL: return []
+    ts = _tbl("sucursales")
     cn = _pg(); cr = cn.cursor()
-    cr.execute("SELECT DISTINCT cadena FROM cat_sucursales ORDER BY cadena"); rows = cr.fetchall(); cr.close(); cn.close()
+    cr.execute(f"SELECT DISTINCT cadena FROM {ts} ORDER BY cadena"); rows = cr.fetchall(); cr.close(); cn.close()
     return [r[0] for r in rows if r[0]]
 
 @app.get("/catalog/localidades")
 def catalog_localidades():
     if not _DB_URL: return []
+    ts = _tbl("sucursales")
     cn = _pg(); cr = cn.cursor()
-    cr.execute("SELECT DISTINCT localidad FROM cat_sucursales ORDER BY localidad"); rows = cr.fetchall(); cr.close(); cn.close()
+    cr.execute(f"SELECT DISTINCT localidad FROM {ts} ORDER BY localidad"); rows = cr.fetchall(); cr.close(); cn.close()
     return [r[0] for r in rows if r[0]]
 
 @app.get("/catalog/zonas")
@@ -813,13 +827,14 @@ def catalog_zonas():
 @app.get("/catalog/status")
 def catalog_status():
     if not _DB_URL: return {"lastRun":"","totalProducts":0,"totalPrices":0,"totalSucursales":0}
+    tp = _tbl("productos"); tpr = _tbl("precios"); ts = _tbl("sucursales")
     cn = _pg(); cr = cn.cursor()
     cr.execute("SELECT ts,duration,products,prices FROM scraper_runs ORDER BY ts DESC LIMIT 1"); row = cr.fetchone()
-    cr.execute("SELECT COUNT(*) FROM cat_productos"); tp = cr.fetchone()[0]
-    cr.execute("SELECT COUNT(*) FROM cat_precios"); tpr = cr.fetchone()[0]
-    cr.execute("SELECT COUNT(*) FROM cat_sucursales"); ts = cr.fetchone()[0]
+    cr.execute(f"SELECT COUNT(*) FROM {tp}"); ntp = cr.fetchone()[0]
+    cr.execute(f"SELECT COUNT(*) FROM {tpr}"); ntpr = cr.fetchone()[0]
+    cr.execute(f"SELECT COUNT(*) FROM {ts}"); nts = cr.fetchone()[0]
     cr.close(); cn.close()
-    return {"lastRun":str(row[0]) if row else "","totalProducts":tp,"totalPrices":tpr,"totalSucursales":ts}
+    return {"lastRun":str(row[0]) if row else "","totalProducts":ntp,"totalPrices":ntpr,"totalSucursales":nts}
 
 @app.post("/catalog/scrape")
 def catalog_trigger_scrape():
