@@ -660,6 +660,33 @@ _VTEX_STORES = {
     "Carrefour": "https://www.carrefour.com.ar",
 }
 
+def _seed_promos():
+    """Seed common bank promotions for supermarkets."""
+    if not _DB_URL: return
+    conn = _pg(); cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM promos_bancarias"); count = cur.fetchone()[0]
+    if count > 0:
+        cur.close(); conn.close(); return
+    promos = [
+        ("Carrefour","Banco Carrefour","Tarjeta Carrefour",20,None,None,None,None,"20% con Tarjeta de Crédito Carrefour"),
+        ("Carrefour","Cuenta Digital Carrefour","Cuenta Digital",10,None,None,None,None,"10% con Cuenta Digital Carrefour"),
+        ("Carrefour","BBVA","Visa/Mastercard",15,"Miércoles",15000,None,None,"15% los miércoles con BBVA, tope $15.000"),
+        ("DIA","Cuenta DNI","Cuenta DNI",10,None,10000,None,None,"10% con Cuenta DNI Provincia, tope $10.000"),
+        ("DIA","Club DIA","Club DIA",10,None,None,None,None,"10% con Club DIA en productos seleccionados"),
+        ("DIA","Banco Nación","Visa/Mastercard",20,"Martes",15000,None,None,"20% los martes con Banco Nación, tope $15.000"),
+        ("Jumbo","Banco Galicia","Visa/Mastercard",15,"Sábados",12000,None,None,"15% los sábados con Galicia, tope $12.000"),
+        ("Jumbo","Cencosud","Tarjeta Cencosud",15,None,None,None,None,"15% con Tarjeta Cencosud"),
+        ("Disco","Cencosud","Tarjeta Cencosud",15,None,None,None,None,"15% con Tarjeta Cencosud"),
+        ("Disco","Banco Galicia","Visa/Mastercard",15,"Sábados",12000,None,None,"15% los sábados con Galicia, tope $12.000"),
+        ("Changomas","Banco Provincia","Cuenta DNI",15,"Miércoles",10000,None,None,"15% los miércoles con Cuenta DNI, tope $10.000"),
+        ("Coto","ICBC","Visa/Mastercard",30,"Lunes",15000,None,None,"30% los lunes con ICBC, tope $15.000"),
+        ("Coto","Banco Nación","Visa/Mastercard",20,"Jueves",12000,None,None,"20% los jueves con Banco Nación, tope $12.000"),
+        ("Coto","Comunidad Coto","Comunidad Coto",5,None,None,None,None,"5% con Comunidad Coto en productos seleccionados"),
+    ]
+    for p in promos:
+        cur.execute("INSERT INTO promos_bancarias (cadena,banco,tarjeta,descuento_pct,dia_semana,tope_reintegro,vigencia_desde,vigencia_hasta,condiciones) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", p)
+    conn.commit(); cur.close(); conn.close()
+
 # More specific search terms for better results
 _SCRAPE_TERMS = [
     "leche entera", "leche descremada", "leche larga vida",
@@ -685,13 +712,16 @@ def _init_catalog_db():
         "CREATE TABLE IF NOT EXISTS zonas (id SERIAL PRIMARY KEY, nombre TEXT UNIQUE NOT NULL, lat DOUBLE PRECISION NOT NULL, lng DOUBLE PRECISION NOT NULL, radio_km DOUBLE PRECISION NOT NULL DEFAULT 10.0)",
         "CREATE TABLE IF NOT EXISTS vtex_productos (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, marca TEXT, presentacion TEXT, nombre_lower TEXT, marca_lower TEXT, cadena TEXT NOT NULL, precio DOUBLE PRECISION, precio_lista DOUBLE PRECISION, imagen TEXT, updated_at TIMESTAMP DEFAULT NOW())",
         "CREATE TABLE IF NOT EXISTS scraper_runs (id SERIAL PRIMARY KEY, zona_id INTEGER, ts TIMESTAMP DEFAULT NOW(), duration DOUBLE PRECISION, products INTEGER, prices INTEGER)",
+        "CREATE TABLE IF NOT EXISTS promos_bancarias (id SERIAL PRIMARY KEY, cadena TEXT NOT NULL, banco TEXT NOT NULL, tarjeta TEXT, descuento_pct DOUBLE PRECISION NOT NULL, dia_semana TEXT, tope_reintegro DOUBLE PRECISION, vigencia_desde TEXT, vigencia_hasta TEXT, condiciones TEXT, updated_at TIMESTAMP DEFAULT NOW())",
         "CREATE INDEX IF NOT EXISTS idx_vp_nombre ON vtex_productos(nombre_lower)",
         "CREATE INDEX IF NOT EXISTS idx_vp_marca ON vtex_productos(marca_lower)",
         "CREATE INDEX IF NOT EXISTS idx_vp_cadena ON vtex_productos(cadena)",
+        "CREATE INDEX IF NOT EXISTS idx_pb_cadena ON promos_bancarias(cadena)",
     ]:
         cur.execute(sql)
     cur.execute("INSERT INTO zonas (nombre,lat,lng,radio_km) VALUES ('Zona Sur GBA',-34.83,-58.39,12.0) ON CONFLICT (nombre) DO NOTHING")
     conn.commit(); cur.close(); conn.close()
+    _seed_promos()
 
 
 def _vtex_search(base_url, query, _from=0, _to=49):
@@ -767,7 +797,58 @@ def _run_catalog_scraper():
     cn = _pg(); cr = cn.cursor()
     cr.execute("INSERT INTO scraper_runs (duration,products,prices) VALUES (%s,%s,%s)", (_time.time()-start, total, total))
     cn.commit(); cr.close(); cn.close()
+
+    # Also scrape Changomas via SEPA
+    _scrape_changomas_sepa(total)
+
     log.info(f"=== VTEX scraper done: {total} products in {_time.time()-start:.0f}s ===")
+
+def _scrape_changomas_sepa(vtex_total):
+    """Scrape Changomas prices via SEPA API (they don't have VTEX)."""
+    import logging; log = logging.getLogger("scraper")
+    log.info("Scraping Changomas via SEPA...")
+    count = 0
+    for term in _SCRAPE_TERMS:
+        try:
+            r = _requests.get(f"{SEPA_BASE_URL}/productos",
+                params={"string": term, "lat": "-34.83", "lng": "-58.39"},
+                headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+            if r.status_code != 200: continue
+            data = r.json()
+            productos = data.get("productos", [])[:25]
+            for p in productos:
+                pid = p.get("id", "")
+                if not pid: continue
+                # Get prices at nearby Changomas
+                pr = _requests.get(f"{SEPA_BASE_URL}/producto",
+                    params={"id_producto": pid, "lat": "-34.83", "lng": "-58.39"},
+                    headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+                if pr.status_code not in (200, 206): continue
+                pdata = pr.json()
+                rows = []
+                for suc in pdata.get("sucursales", []):
+                    cadena = suc.get("banderaDescripcion", "")
+                    if "changomas" not in cadena.lower() and "walmart" not in cadena.lower():
+                        continue
+                    pp = suc.get("preciosProducto", {})
+                    precio = pp.get("precioLista")
+                    if not precio or float(precio) < 100: continue
+                    dist = suc.get("distanciaNumero", 999)
+                    if dist > 15: continue
+                    doc_id = f"Changomas_{pid}"
+                    rows.append((doc_id, p.get("nombre", ""), p.get("marca", ""), p.get("presentacion", ""),
+                        p.get("nombre", "").lower(), p.get("marca", "").lower(), "Changomas",
+                        float(precio), float(precio), ""))
+                if rows:
+                    cn = _pg(); cr = cn.cursor()
+                    execute_values(cr, """INSERT INTO vtex_productos (id,nombre,marca,presentacion,nombre_lower,marca_lower,cadena,precio,precio_lista,imagen)
+                        VALUES %s ON CONFLICT (id) DO UPDATE SET precio=EXCLUDED.precio,updated_at=NOW()""", rows)
+                    cn.commit(); cr.close(); cn.close()
+                    count += len(rows)
+                _time.sleep(0.3)
+        except: pass
+        _time.sleep(0.3)
+    log.info(f"Changomas (SEPA): {count} products")
 
 # Catalog API endpoints
 @app.get("/catalog/productos")
@@ -790,6 +871,17 @@ def catalog_cadenas():
     cn = _pg(); cr = cn.cursor()
     cr.execute("SELECT DISTINCT cadena FROM vtex_productos ORDER BY cadena"); rows = cr.fetchall(); cr.close(); cn.close()
     return [r[0] for r in rows if r[0]]
+
+@app.get("/catalog/promos")
+def catalog_promos(cadena: str = Query(None)):
+    if not _DB_URL: return []
+    cn = _pg(); cr = cn.cursor()
+    if cadena:
+        cr.execute("SELECT id,cadena,banco,tarjeta,descuento_pct,dia_semana,tope_reintegro,condiciones FROM promos_bancarias WHERE LOWER(cadena) LIKE %s ORDER BY descuento_pct DESC", (f"%{cadena.lower()}%",))
+    else:
+        cr.execute("SELECT id,cadena,banco,tarjeta,descuento_pct,dia_semana,tope_reintegro,condiciones FROM promos_bancarias ORDER BY cadena,descuento_pct DESC")
+    rows = cr.fetchall(); cr.close(); cn.close()
+    return [{"id":r[0],"cadena":r[1],"banco":r[2],"tarjeta":r[3],"descuentoPct":r[4],"diaSemana":r[5],"topeReintegro":r[6],"condiciones":r[7]} for r in rows]
 
 @app.get("/catalog/marcas")
 def catalog_marcas(q: str = Query(None)):
