@@ -1072,19 +1072,21 @@ def catalog_optimizar(body: dict):
                 else:
                     missing.append(pid)
             else:
-                # cualquier_marca: find cheapest in this chain
+                # cualquier_marca: find cheapest in this chain using ALL words (AND logic)
                 nombre_lower = nombre.lower().strip()
+                words = nombre_lower.split()
                 found = False
-                for search in [nombre_lower, nombre_lower.split()[0] if nombre_lower else ""]:
-                    if not search: continue
-                    cr.execute("SELECT nombre,marca,precio FROM vtex_productos WHERE cadena=%s AND nombre_lower LIKE %s ORDER BY precio LIMIT 1",
-                        (cadena, f"%{search}%"))
+                if words:
+                    # Build AND condition: all words must be present
+                    conditions = " AND ".join(["nombre_lower LIKE %s"] * len(words))
+                    params = [f"%{w}%" for w in words]
+                    cr.execute(f"SELECT nombre,marca,precio FROM vtex_productos WHERE cadena=%s AND {conditions} ORDER BY precio LIMIT 1",
+                        [cadena] + params)
                     row = cr.fetchone()
                     if row:
                         total += row[2] * qty
                         selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
                         found = True
-                        break
                 if not found:
                     missing.append(nombre)
 
