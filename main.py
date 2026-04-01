@@ -1031,28 +1031,31 @@ def catalog_optimizar(body: dict):
     for cadena in cadenas:
         total = 0.0
         missing = []
+        selected_products = []  # Track which products were selected
         for prod in productos_req:
             pid = prod.get("producto_id")
             nombre = prod.get("nombre", "")
             qty = prod.get("cantidad", 1)
             if pid and pid != "cualquier_marca":
-                cr.execute("SELECT precio FROM vtex_productos WHERE id=%s", (pid,))
+                cr.execute("SELECT nombre,marca,precio FROM vtex_productos WHERE id=%s", (pid,))
                 row = cr.fetchone()
                 if row:
-                    total += row[0] * qty
+                    total += row[2] * qty
+                    selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
                 else:
                     missing.append(pid)
             else:
-                # cualquier_marca: find cheapest in this chain - try multiple search strategies
+                # cualquier_marca: find cheapest in this chain
                 nombre_lower = nombre.lower().strip()
                 found = False
                 for search in [nombre_lower, nombre_lower.split()[0] if nombre_lower else ""]:
                     if not search: continue
-                    cr.execute("SELECT precio FROM vtex_productos WHERE cadena=%s AND nombre_lower LIKE %s ORDER BY precio LIMIT 1",
+                    cr.execute("SELECT nombre,marca,precio FROM vtex_productos WHERE cadena=%s AND nombre_lower LIKE %s ORDER BY precio LIMIT 1",
                         (cadena, f"%{search}%"))
                     row = cr.fetchone()
                     if row:
-                        total += row[0] * qty
+                        total += row[2] * qty
+                        selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
                         found = True
                         break
                 if not found:
@@ -1088,7 +1091,8 @@ def catalog_optimizar(body: dict):
         ranking.append({
             "cadena":cadena,"totalOriginal":round(total,2),"totalFinal":round(final,2),
             "ahorro":round(ahorro,2),"ahorroPorcentaje":round(ahorro/total*100,2) if total>0 else 0,
-            "distribucionPagos":pagos,"productosFaltantes":missing
+            "distribucionPagos":pagos,"productosFaltantes":missing,
+            "productosSeleccionados":selected_products
         })
 
     cr.close(); cn.close()
@@ -1104,6 +1108,7 @@ def catalog_optimizar(body: dict):
         "ahorroPorcentaje": best["ahorroPorcentaje"] if best else 0,
         "distribucionPagos": best["distribucionPagos"] if best else [],
         "productosFaltantes": best["productosFaltantes"] if best else [],
+        "productosSeleccionados": best["productosSeleccionados"] if best else [],
         "rankingCadenas": [{"cadena":r["cadena"],"totalFinal":r["totalFinal"],"ahorro":r["ahorro"]} for r in ranking]
     }
 
