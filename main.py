@@ -770,7 +770,7 @@ def _run_catalog_scraper():
                 except: pass
                 if price <= 0: continue
                 # Filter out invalid prices (Jumbo/Disco API sometimes returns price per gram/ml)
-                if price < 500: continue
+                if price < 1000: continue
                 # Extract presentacion from name or item
                 presentacion = ""
                 try:
@@ -832,7 +832,7 @@ def _scrape_changomas_sepa(vtex_total):
                         continue
                     pp = suc.get("preciosProducto", {})
                     precio = pp.get("precioLista")
-                    if not precio or float(precio) < 100: continue
+                    if not precio or float(precio) < 1000: continue
                     dist = suc.get("distanciaNumero", 999)
                     if dist > 15: continue
                     doc_id = f"Changomas_{pid}"
