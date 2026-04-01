@@ -912,13 +912,19 @@ def _scrape_changomas_sepa(vtex_total):
 def catalog_search(q: str = Query(..., min_length=2), marca: str = Query(None), cadena: str = Query(None), limit: int = Query(30, le=100)):
     if not _DB_URL: return []
     cn = _pg(); cr = cn.cursor()
-    sql = "SELECT id,nombre,marca,presentacion,cadena,precio,precio_lista,imagen FROM vtex_productos WHERE nombre_lower LIKE %s"
-    params = [f"%{q.lower().strip()}%"]
+    q_lower = q.lower().strip()
+    words = q_lower.split()
+    # Build WHERE with all words required (AND logic)
+    conditions = ["nombre_lower LIKE %s" for _ in words]
+    params = [f"%{w}%" for w in words]
+    sql = f"SELECT id,nombre,marca,presentacion,cadena,precio,precio_lista,imagen FROM vtex_productos WHERE {' AND '.join(conditions)}"
     if marca:
         sql += " AND marca_lower LIKE %s"; params.append(f"%{marca.lower().strip()}%")
     if cadena:
         sql += " AND cadena = %s"; params.append(cadena)
-    sql += " ORDER BY precio ASC LIMIT %s"; params.append(limit)
+    # Prioritize products where name starts with the search
+    sql += f" ORDER BY CASE WHEN nombre_lower LIKE %s THEN 0 ELSE 1 END, precio ASC LIMIT %s"
+    params.extend([f"{q_lower}%", limit])
     cr.execute(sql, params); rows = cr.fetchall(); cr.close(); cn.close()
     return [{"id":r[0],"nombre":r[1],"marca":r[2],"presentacion":r[3],"cadena":r[4],"precio":r[5],"precioLista":r[6],"imagen":r[7]} for r in rows]
 
@@ -983,10 +989,31 @@ def catalog_buscar_opciones(q: str = Query(..., min_length=2)):
     """Search product options by name, grouped by name+brand+presentacion with prices per chain."""
     if not _DB_URL: return []
     cn = _pg(); cr = cn.cursor()
-    cr.execute("""
-        SELECT nombre,marca,presentacion,cadena,id,precio FROM vtex_productos
-        WHERE nombre_lower LIKE %s ORDER BY nombre,precio LIMIT 200
-    """, (f"%{q.lower().strip()}%",))
+    q_lower = q.lower().strip()
+    # Search with all words required (AND logic) and prioritize exact matches
+    words = q_lower.split()
+    if len(words) > 1:
+        # Build WHERE with all words required
+        conditions = " AND ".join(["nombre_lower LIKE %s"] * len(words))
+        params = [f"%{w}%" for w in words]
+        # First try: products where name starts with the search term (most relevant)
+        cr.execute(f"""
+            SELECT nombre,marca,presentacion,cadena,id,precio FROM vtex_productos
+            WHERE {conditions}
+            ORDER BY
+                CASE WHEN nombre_lower LIKE %s THEN 0 ELSE 1 END,
+                precio ASC
+            LIMIT 200
+        """, params + [f"{q_lower}%"])
+    else:
+        cr.execute("""
+            SELECT nombre,marca,presentacion,cadena,id,precio FROM vtex_productos
+            WHERE nombre_lower LIKE %s
+            ORDER BY
+                CASE WHEN nombre_lower LIKE %s THEN 0 ELSE 1 END,
+                precio ASC
+            LIMIT 200
+        """, (f"%{q_lower}%", f"{q_lower}%"))
     rows = cr.fetchall(); cr.close(); cn.close()
     # Group by nombre+marca
     from collections import OrderedDict
