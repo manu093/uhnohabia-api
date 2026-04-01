@@ -1043,13 +1043,19 @@ def catalog_optimizar(body: dict):
                 else:
                     missing.append(pid)
             else:
-                # cualquier_marca: find cheapest in this chain
-                cr.execute("SELECT precio FROM vtex_productos WHERE cadena=%s AND nombre_lower LIKE %s ORDER BY precio LIMIT 1",
-                    (cadena, f"%{nombre.lower()}%"))
-                row = cr.fetchone()
-                if row:
-                    total += row[0] * qty
-                else:
+                # cualquier_marca: find cheapest in this chain - try multiple search strategies
+                nombre_lower = nombre.lower().strip()
+                found = False
+                for search in [nombre_lower, nombre_lower.split()[0] if nombre_lower else ""]:
+                    if not search: continue
+                    cr.execute("SELECT precio FROM vtex_productos WHERE cadena=%s AND nombre_lower LIKE %s ORDER BY precio LIMIT 1",
+                        (cadena, f"%{search}%"))
+                    row = cr.fetchone()
+                    if row:
+                        total += row[0] * qty
+                        found = True
+                        break
+                if not found:
                     missing.append(nombre)
 
         if total <= 0: continue
