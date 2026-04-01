@@ -687,6 +687,56 @@ def _seed_promos():
         cur.execute("INSERT INTO promos_bancarias (cadena,banco,tarjeta,descuento_pct,dia_semana,tope_reintegro,vigencia_desde,vigencia_hasta,condiciones) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", p)
     conn.commit(); cur.close(); conn.close()
 
+def _seed_medios_pago():
+    """Seed master list of payment methods."""
+    if not _DB_URL: return
+    conn = _pg(); cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM medios_pago"); count = cur.fetchone()[0]
+    if count > 0:
+        cur.close(); conn.close(); return
+    bancos = [
+        ("BBVA","Visa,Mastercard,American Express"),("Bica","Visa,Mastercard"),("Ciudad","Visa,Mastercard"),
+        ("Coinag","Visa,Mastercard"),("Columbia","Visa,Mastercard"),("Comafi","Visa,Mastercard"),
+        ("Credicoop","Visa,Mastercard,Cabal"),("Corrientes","Visa,Mastercard"),("Tierra del Fuego","Visa,Mastercard"),
+        ("Chubut","Visa,Mastercard"),("Del Sol","Visa,Mastercard"),("Entre Ríos","Visa,Mastercard"),
+        ("Formosa","Visa,Mastercard"),("Galicia","Visa,Mastercard,American Express"),
+        ("Hipotecario","Visa,Mastercard"),("HSBC","Visa,Mastercard"),("ICBC","Visa,Mastercard"),
+        ("Industrial (BIND)","Visa,Mastercard"),("La Pampa","Visa,Mastercard"),
+        ("Macro","Visa,Mastercard"),("Nación","Visa,Mastercard"),("Patagonia","Visa,Mastercard"),
+        ("Provincia","Visa,Mastercard"),("Roela","Visa,Mastercard"),("San Juan","Visa,Mastercard"),
+        ("Santa Cruz","Visa,Mastercard"),("Santa Fe","Visa,Mastercard"),("Santander","Visa,Mastercard,American Express"),
+        ("Supervielle","Visa,Mastercard"),
+    ]
+    billeteras = [
+        "Apple Pay","Astropay","Axion ON","Billetera Santa Fe","BNA+","Cenco Pay",
+        "Claro Pay","Cuenta DNI","GoCuotas","Lemon","Mercado Pago","MODO",
+        "n1u","Nubi","Personal Pay","Prex","Shell Box","Ualá","Billetera Córdoba",
+        "Wayni","Wibond","Naranja X","Tap","YOY",
+    ]
+    clubes = [
+        "¡Appa!","Beneficios La Capital","Club Crónica","Club La Nación",
+        "Automóvil Club Argentino (ACA)","Clarín 365","Club DIA","Comunidad Coto","Tarjeta Cencosud",
+    ]
+    for nombre, tarjetas in bancos:
+        cur.execute("INSERT INTO medios_pago (nombre,tipo,nombre_display,tarjetas_disponibles) VALUES (%s,'banco',%s,%s)",
+            (nombre, f"Banco {nombre}", tarjetas))
+    for nombre in billeteras:
+        cur.execute("INSERT INTO medios_pago (nombre,tipo,nombre_display) VALUES (%s,'billetera_digital',%s)",
+            (nombre, nombre))
+    for nombre in clubes:
+        cur.execute("INSERT INTO medios_pago (nombre,tipo,nombre_display) VALUES (%s,'club_beneficios',%s)",
+            (nombre, nombre))
+    conn.commit()
+    # Link existing promos to medios_pago
+    cur.execute("SELECT id,nombre FROM medios_pago")
+    mp_map = {r[1].lower(): r[0] for r in cur.fetchall()}
+    cur.execute("SELECT id,banco FROM promos_bancarias WHERE medio_pago_id IS NULL")
+    for pid, banco in cur.fetchall():
+        mp_id = mp_map.get(banco.lower()) or mp_map.get(f"banco {banco}".lower())
+        if mp_id:
+            cur.execute("UPDATE promos_bancarias SET medio_pago_id=%s WHERE id=%s", (mp_id, pid))
+    conn.commit(); cur.close(); conn.close()
+
 # More specific search terms for better results
 _SCRAPE_TERMS = [
     "leche entera", "leche descremada", "leche larga vida",
@@ -717,11 +767,18 @@ def _init_catalog_db():
         "CREATE INDEX IF NOT EXISTS idx_vp_marca ON vtex_productos(marca_lower)",
         "CREATE INDEX IF NOT EXISTS idx_vp_cadena ON vtex_productos(cadena)",
         "CREATE INDEX IF NOT EXISTS idx_pb_cadena ON promos_bancarias(cadena)",
+        # Smart Discount Optimizer tables
+        "CREATE TABLE IF NOT EXISTS medios_pago (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, tipo TEXT NOT NULL, nombre_display TEXT NOT NULL, tarjetas_disponibles TEXT, activo BOOLEAN DEFAULT TRUE, updated_at TIMESTAMP DEFAULT NOW())",
+        "ALTER TABLE promos_bancarias ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'banco'",
+        "ALTER TABLE promos_bancarias ADD COLUMN IF NOT EXISTS medio_pago_id INTEGER",
+        "CREATE INDEX IF NOT EXISTS idx_mp_tipo ON medios_pago(tipo)",
+        "CREATE INDEX IF NOT EXISTS idx_pb_medio ON promos_bancarias(medio_pago_id)",
     ]:
         cur.execute(sql)
     cur.execute("INSERT INTO zonas (nombre,lat,lng,radio_km) VALUES ('Zona Sur GBA',-34.83,-58.39,12.0) ON CONFLICT (nombre) DO NOTHING")
     conn.commit(); cur.close(); conn.close()
     _seed_promos()
+    _seed_medios_pago()
 
 
 def _vtex_search(base_url, query, _from=0, _to=49):
@@ -908,6 +965,141 @@ def catalog_status():
 def catalog_trigger_scrape():
     threading.Thread(target=_run_catalog_scraper, daemon=True).start()
     return {"status":"started"}
+
+# --- Smart Discount Optimizer endpoints ---
+
+@app.get("/catalog/medios_pago")
+def catalog_medios_pago():
+    """Return master list of payment methods grouped by type."""
+    if not _DB_URL: return []
+    cn = _pg(); cr = cn.cursor()
+    cr.execute("SELECT id,nombre,tipo,nombre_display,tarjetas_disponibles,activo FROM medios_pago WHERE activo=TRUE ORDER BY tipo,nombre")
+    rows = cr.fetchall(); cr.close(); cn.close()
+    return [{"id":r[0],"nombre":r[1],"tipo":r[2],"nombreDisplay":r[3],
+             "tarjetasDisponibles":r[4].split(",") if r[4] else None,"activo":r[5]} for r in rows]
+
+@app.get("/catalog/buscar_opciones")
+def catalog_buscar_opciones(q: str = Query(..., min_length=2)):
+    """Search product options by name, grouped by name+brand+presentacion with prices per chain."""
+    if not _DB_URL: return []
+    cn = _pg(); cr = cn.cursor()
+    cr.execute("""
+        SELECT nombre,marca,presentacion,cadena,id,precio FROM vtex_productos
+        WHERE nombre_lower LIKE %s ORDER BY nombre,precio LIMIT 200
+    """, (f"%{q.lower().strip()}%",))
+    rows = cr.fetchall(); cr.close(); cn.close()
+    # Group by nombre+marca
+    from collections import OrderedDict
+    groups = OrderedDict()
+    for nombre,marca,pres,cadena,pid,precio in rows:
+        key = f"{nombre}|{marca}"
+        if key not in groups:
+            groups[key] = {"nombre":nombre,"marca":marca,"presentacion":pres,"preciosPorCadena":[]}
+        groups[key]["preciosPorCadena"].append({"cadena":cadena,"productoId":pid,"precio":precio})
+    return list(groups.values())[:50]
+
+@app.post("/catalog/optimizar")
+def catalog_optimizar(body: dict):
+    """Calculate optimal supermarket + payment split for a shopping list."""
+    if not _DB_URL: return {"error":"DB not configured"}
+    productos_req = body.get("productos", [])
+    medios_ids = body.get("medios_pago_ids", [])
+    tarjetas_sel = body.get("tarjetas_seleccionadas", {})
+    dia = body.get("dia_semana", "")
+
+    cn = _pg(); cr = cn.cursor()
+
+    # Get all chains
+    cr.execute("SELECT DISTINCT cadena FROM vtex_productos")
+    cadenas = [r[0] for r in cr.fetchall()]
+
+    # Get applicable promos
+    promo_sql = "SELECT cadena,banco,tarjeta,descuento_pct,dia_semana,tope_reintegro,medio_pago_id FROM promos_bancarias WHERE 1=1"
+    promo_params = []
+    if medios_ids:
+        promo_sql += " AND medio_pago_id IN %s"
+        promo_params.append(tuple(medios_ids))
+    cr.execute(promo_sql, promo_params)
+    all_promos = cr.fetchall()
+
+    # Filter promos by day
+    def promo_applies(promo_dia):
+        if not promo_dia or not dia: return True
+        return promo_dia.lower() == dia.lower()
+
+    ranking = []
+    for cadena in cadenas:
+        total = 0.0
+        missing = []
+        for prod in productos_req:
+            pid = prod.get("producto_id")
+            nombre = prod.get("nombre", "")
+            qty = prod.get("cantidad", 1)
+            if pid and pid != "cualquier_marca":
+                cr.execute("SELECT precio FROM vtex_productos WHERE id=%s", (pid,))
+                row = cr.fetchone()
+                if row:
+                    total += row[0] * qty
+                else:
+                    missing.append(pid)
+            else:
+                # cualquier_marca: find cheapest in this chain
+                cr.execute("SELECT precio FROM vtex_productos WHERE cadena=%s AND nombre_lower LIKE %s ORDER BY precio LIMIT 1",
+                    (cadena, f"%{nombre.lower()}%"))
+                row = cr.fetchone()
+                if row:
+                    total += row[0] * qty
+                else:
+                    missing.append(nombre)
+
+        if total <= 0: continue
+
+        # Apply discounts (greedy)
+        cadena_promos = [(p[1],p[2],p[3],p[4],p[5]) for p in all_promos if p[0]==cadena and promo_applies(p[4])]
+        cadena_promos.sort(key=lambda x: -x[2])  # Sort by descuento_pct DESC
+
+        remaining = total
+        pagos = []
+        for banco,tarjeta,dpct,dia_p,tope in cadena_promos:
+            if remaining <= 0: break
+            descuento = remaining * (dpct / 100)
+            tope_val = tope or 0
+            if tope_val > 0 and descuento > tope_val:
+                descuento = tope_val
+                monto = tope_val / (dpct / 100)
+            else:
+                monto = remaining
+            pagos.append({"medioPago":banco,"tarjeta":tarjeta,"monto":round(monto,2),
+                "descuentoPct":dpct,"ahorro":round(descuento,2),"topeAplicado":tope_val>0 and descuento>=tope_val})
+            remaining -= monto
+
+        if remaining > 0:
+            pagos.append({"medioPago":"Efectivo","tarjeta":None,"monto":round(remaining,2),
+                "descuentoPct":0,"ahorro":0,"topeAplicado":False})
+
+        ahorro = sum(p["ahorro"] for p in pagos)
+        final = total - ahorro
+        ranking.append({
+            "cadena":cadena,"totalOriginal":round(total,2),"totalFinal":round(final,2),
+            "ahorro":round(ahorro,2),"ahorroPorcentaje":round(ahorro/total*100,2) if total>0 else 0,
+            "distribucionPagos":pagos,"productosFaltantes":missing
+        })
+
+    cr.close(); cn.close()
+
+    ranking.sort(key=lambda x: x["totalFinal"])
+    best = ranking[0] if ranking else None
+
+    return {
+        "cadenaRecomendada": best["cadena"] if best else None,
+        "totalOriginal": best["totalOriginal"] if best else 0,
+        "totalFinal": best["totalFinal"] if best else 0,
+        "ahorroTotal": best["ahorro"] if best else 0,
+        "ahorroPorcentaje": best["ahorroPorcentaje"] if best else 0,
+        "distribucionPagos": best["distribucionPagos"] if best else [],
+        "productosFaltantes": best["productosFaltantes"] if best else [],
+        "rankingCadenas": [{"cadena":r["cadena"],"totalFinal":r["totalFinal"],"ahorro":r["ahorro"]} for r in ranking]
+    }
 
 # Remove old endpoints that are no longer needed
 # /catalog/precios, /catalog/localidades, /catalog/zonas are removed
