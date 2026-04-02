@@ -1072,12 +1072,32 @@ def catalog_optimizar(body: dict):
                 else:
                     missing.append(pid)
             else:
-                # cualquier_marca: find cheapest in this chain using ALL words (AND logic)
+                # cualquier_marca: find cheapest in this chain
+                # Strategy: 1) name STARTS WITH query, 2) all words AND
                 nombre_lower = nombre.lower().strip()
                 words = nombre_lower.split()
                 found = False
-                if words:
-                    # Build AND condition: all words must be present
+                # Try 1: name starts with the search term (most precise)
+                cr.execute("SELECT nombre,marca,precio FROM vtex_productos WHERE cadena=%s AND nombre_lower LIKE %s ORDER BY precio LIMIT 1",
+                    (cadena, f"{nombre_lower}%"))
+                row = cr.fetchone()
+                if row:
+                    total += row[2] * qty
+                    selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
+                    found = True
+                # Try 2: all words must be present AND name starts with first word
+                if not found and len(words) > 1:
+                    conditions = " AND ".join(["nombre_lower LIKE %s"] * len(words))
+                    params = [f"%{w}%" for w in words]
+                    cr.execute(f"SELECT nombre,marca,precio FROM vtex_productos WHERE cadena=%s AND {conditions} AND nombre_lower LIKE %s ORDER BY precio LIMIT 1",
+                        [cadena] + params + [f"{words[0]}%"])
+                    row = cr.fetchone()
+                    if row:
+                        total += row[2] * qty
+                        selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
+                        found = True
+                # Try 3: all words AND (fallback)
+                if not found and words:
                     conditions = " AND ".join(["nombre_lower LIKE %s"] * len(words))
                     params = [f"%{w}%" for w in words]
                     cr.execute(f"SELECT nombre,marca,precio FROM vtex_productos WHERE cadena=%s AND {conditions} ORDER BY precio LIMIT 1",
