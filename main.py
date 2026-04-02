@@ -1023,7 +1023,43 @@ def catalog_buscar_opciones(q: str = Query(..., min_length=2)):
         if key not in groups:
             groups[key] = {"nombre":nombre,"marca":marca,"presentacion":pres,"preciosPorCadena":[]}
         groups[key]["preciosPorCadena"].append({"cadena":cadena,"productoId":pid,"precio":precio})
-    return list(groups.values())[:50]
+    result = list(groups.values())[:50]
+    
+    # If few results, try real-time VTEX search to fill gaps
+    if len(result) < 5:
+        _VTEX_URLS = {
+            "DIA": "https://diaonline.supermercadosdia.com.ar",
+            "Jumbo": "https://www.jumbo.com.ar",
+            "Disco": "https://www.disco.com.ar",
+            "Carrefour": "https://www.carrefour.com.ar",
+            "Changomas": "https://www.masonline.com.ar",
+        }
+        existing_names = {g["nombre"].lower() for g in result}
+        for cadena_name, base_url in _VTEX_URLS.items():
+            try:
+                r = _requests.get(f"{base_url}/api/catalog_system/pub/products/search/{q}",
+                    params={"_from": 0, "_to": 9},
+                    headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"}, timeout=8)
+                if r.status_code not in (200, 206): continue
+                data = r.json()
+                if not isinstance(data, list): continue
+                for p in data[:5]:
+                    try:
+                        name = p.get("productName", "")
+                        if name.lower() in existing_names: continue
+                        price = float(p["items"][0]["sellers"][0]["commertialOffer"]["Price"])
+                        if price < 1000: continue
+                        brand = p.get("brand", "")
+                        key = f"{name}|{brand}"
+                        if key not in groups:
+                            groups[key] = {"nombre": name, "marca": brand, "presentacion": "", "preciosPorCadena": []}
+                        groups[key]["preciosPorCadena"].append({"cadena": cadena_name, "productoId": f"{cadena_name}_{p.get('productId','')}", "precio": price})
+                        existing_names.add(name.lower())
+                    except: continue
+            except: continue
+        result = list(groups.values())[:50]
+    
+    return result
 
 @app.post("/catalog/optimizar")
 def catalog_optimizar(body: dict):
@@ -1054,11 +1090,51 @@ def catalog_optimizar(body: dict):
         if not promo_dia or not dia: return True
         return promo_dia.lower() == dia.lower()
 
+    # Map cadena -> VTEX base URL for real-time fallback search
+    _CADENA_VTEX = {
+        "DIA": "https://diaonline.supermercadosdia.com.ar",
+        "Jumbo": "https://www.jumbo.com.ar",
+        "Disco": "https://www.disco.com.ar",
+        "Carrefour": "https://www.carrefour.com.ar",
+        "Changomas": "https://www.masonline.com.ar",
+    }
+
+    def _search_vtex_realtime(cadena_name, query):
+        """Fallback: search VTEX API in real-time when product not in DB."""
+        base = _CADENA_VTEX.get(cadena_name)
+        if not base:
+            return None
+        try:
+            r = _requests.get(f"{base}/api/catalog_system/pub/products/search/{query}",
+                params={"_from": 0, "_to": 9},
+                headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"}, timeout=10)
+            if r.status_code not in (200, 206):
+                return None
+            data = r.json()
+            if not isinstance(data, list) or not data:
+                return None
+            # Find best match: prioritize products whose name starts with query
+            best = None
+            for p in data:
+                try:
+                    price = float(p["items"][0]["sellers"][0]["commertialOffer"]["Price"])
+                    if price < 1000:
+                        continue
+                    name = p.get("productName", "")
+                    brand = p.get("brand", "")
+                    if best is None or price < best[2]:
+                        best = (name, brand, price)
+                except:
+                    continue
+            return best
+        except:
+            return None
+
     ranking = []
     for cadena in cadenas:
         total = 0.0
         missing = []
-        selected_products = []  # Track which products were selected
+        selected_products = []
         for prod in productos_req:
             pid = prod.get("producto_id")
             nombre = prod.get("nombre", "")
@@ -1073,14 +1149,13 @@ def catalog_optimizar(body: dict):
                     missing.append(pid)
             else:
                 # cualquier_marca: find cheapest in this chain
-                # Strategy: all words AND, but prioritize products where name starts with query
                 nombre_lower = nombre.lower().strip()
                 words = nombre_lower.split()
                 found = False
+                # Strategy 1: DB search with all words AND
                 if words:
                     conditions = " AND ".join(["nombre_lower LIKE %s"] * len(words))
                     params = [f"%{w}%" for w in words]
-                    # Search with all words required, prioritize name starting with first word
                     cr.execute(f"""SELECT nombre,marca,precio FROM vtex_productos 
                         WHERE cadena=%s AND {conditions} 
                         ORDER BY CASE WHEN nombre_lower LIKE %s THEN 0 WHEN nombre_lower LIKE %s THEN 1 ELSE 2 END, precio 
@@ -1090,6 +1165,13 @@ def catalog_optimizar(body: dict):
                     if row:
                         total += row[2] * qty
                         selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
+                        found = True
+                # Strategy 2: Real-time VTEX API search (fallback)
+                if not found:
+                    rt = _search_vtex_realtime(cadena, nombre)
+                    if rt:
+                        total += rt[2] * qty
+                        selected_products.append({"nombre": rt[0], "marca": rt[1], "precio": rt[2], "cantidad": qty, "busqueda": nombre})
                         found = True
                 if not found:
                     missing.append(nombre)
