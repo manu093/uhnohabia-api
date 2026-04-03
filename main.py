@@ -661,7 +661,7 @@ _VTEX_STORES = {
 }
 
 # Minimum valid price per chain (Jumbo/Disco return price-per-unit instead of total price)
-_MIN_PRICE = {"Jumbo": 500, "Disco": 500}
+_MIN_PRICE = {"Jumbo": 1000, "Disco": 1000}
 _DEFAULT_MIN_PRICE = 100
 
 def _min_price_for(cadena):
