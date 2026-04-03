@@ -660,6 +660,13 @@ _VTEX_STORES = {
     "Carrefour": "https://www.carrefour.com.ar",
 }
 
+# Minimum valid price per chain (Jumbo/Disco return price-per-unit instead of total price)
+_MIN_PRICE = {"Jumbo": 500, "Disco": 500}
+_DEFAULT_MIN_PRICE = 100
+
+def _min_price_for(cadena):
+    return _MIN_PRICE.get(cadena, _DEFAULT_MIN_PRICE)
+
 def _seed_promos():
     """Seed common bank promotions for supermarkets."""
     if not _DB_URL: return
@@ -882,6 +889,9 @@ def _run_catalog_scraper():
                     offer = item["sellers"][0]["commertialOffer"]
                     price = float(offer.get("Price", 0))
                     list_price = float(offer.get("ListPrice", price))
+                    # Skip products with no stock (discontinued, stale prices)
+                    avail = int(offer.get("AvailableQuantity", 0))
+                    if avail <= 0: continue
                     images = item.get("images", [])
                     image = images[0]["imageUrl"] if images else ""
                 except: pass
@@ -986,7 +996,7 @@ def catalog_search(q: str = Query(..., min_length=2), marca: str = Query(None), 
     sql += f" ORDER BY CASE WHEN nombre_lower LIKE %s THEN 0 ELSE 1 END, precio ASC LIMIT %s"
     params.extend([f"{q_lower}%", limit])
     cr.execute(sql, params); rows = cr.fetchall(); cr.close(); cn.close()
-    results = [{"id":r[0],"nombre":r[1],"marca":r[2],"presentacion":r[3],"cadena":r[4],"precio":r[5],"precioLista":r[6],"imagen":r[7]} for r in rows]
+    results = [{"id":r[0],"nombre":r[1],"marca":r[2],"presentacion":r[3],"cadena":r[4],"precio":r[5],"precioLista":r[6],"imagen":r[7]} for r in rows if r[5] >= _min_price_for(r[4])]
 
     # If few results from DB, try real-time VTEX search as fallback
     if len(results) < 5 and not cadena:
@@ -1016,7 +1026,8 @@ def catalog_search(q: str = Query(..., min_length=2), marca: str = Query(None), 
                         name_lower = name.lower()
                         if not all(w in name_lower for w in words): continue
                         price = float(p["items"][0]["sellers"][0]["commertialOffer"]["Price"])
-                        if price < 100: continue
+                        if price < _min_price_for(cad): continue
+                        if int(p["items"][0]["sellers"][0]["commertialOffer"].get("AvailableQuantity", 0)) <= 0: continue
                         brand = p.get("brand", "")
                         if marca and marca.lower() not in brand.lower(): continue
                         images = p.get("items", [{}])[0].get("images", [])
@@ -1154,6 +1165,7 @@ def catalog_buscar_opciones(q: str = Query(..., min_length=2)):
     from collections import OrderedDict
     groups = OrderedDict()
     for nombre,marca,pres,cadena,pid,precio in rows:
+        if precio < _min_price_for(cadena): continue
         key = f"{nombre}|{marca}"
         if key not in groups:
             groups[key] = {"nombre":nombre,"marca":marca,"presentacion":pres,"preciosPorCadena":[]}
@@ -1183,7 +1195,8 @@ def catalog_buscar_opciones(q: str = Query(..., min_length=2)):
                         name = p.get("productName", "")
                         if name.lower() in existing_names: continue
                         price = float(p["items"][0]["sellers"][0]["commertialOffer"]["Price"])
-                        if price < 100: continue
+                        if price < _min_price_for(cadena_name): continue
+                        if int(p["items"][0]["sellers"][0]["commertialOffer"].get("AvailableQuantity", 0)) <= 0: continue
                         brand = p.get("brand", "")
                         key = f"{name}|{brand}"
                         if key not in groups:
@@ -1252,7 +1265,9 @@ def catalog_optimizar(body: dict):
             for p in data:
                 try:
                     price = float(p["items"][0]["sellers"][0]["commertialOffer"]["Price"])
-                    if price < 100:
+                    if price < _min_price_for(cadena_name):
+                        continue
+                    if int(p["items"][0]["sellers"][0]["commertialOffer"].get("AvailableQuantity", 0)) <= 0:
                         continue
                     name = p.get("productName", "")
                     brand = p.get("brand", "")
