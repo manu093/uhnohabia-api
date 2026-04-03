@@ -1248,7 +1248,6 @@ def catalog_optimizar(body: dict):
             data = r.json()
             if not isinstance(data, list) or not data:
                 return None
-            # Find best match: prioritize products whose name starts with query
             best = None
             for p in data:
                 try:
@@ -1265,6 +1264,49 @@ def catalog_optimizar(body: dict):
         except:
             return None
 
+    def _extract_weight_grams(product_name):
+        """Extract weight in grams from product name. Returns (grams, unit_str) or (None, None)."""
+        import re
+        name = product_name.lower()
+        # Match patterns like "1 kg", "500 g", "1kg", "500g", "1.5 kg", "250 ml", "1 l", "1 lt"
+        m = re.search(r'(\d+(?:[.,]\d+)?)\s*(kg|kgm|g|gr|grs|ml|cc|l|lt|lts|litro|litros)\b', name)
+        if not m:
+            return None, None
+        val = float(m.group(1).replace(',', '.'))
+        unit = m.group(2).lower()
+        if unit in ('kg', 'kgm'):
+            return val * 1000, 'g'
+        elif unit in ('g', 'gr', 'grs'):
+            return val, 'g'
+        elif unit in ('l', 'lt', 'lts', 'litro', 'litros'):
+            return val * 1000, 'ml'
+        elif unit in ('ml', 'cc'):
+            return val, 'ml'
+        return None, None
+
+    def _calc_units_needed(product_name, requested_qty, requested_unit):
+        """Calculate how many units of a product to buy based on requested quantity and unit.
+        Returns the number of units needed."""
+        if not requested_unit:
+            return requested_qty
+        req_unit = requested_unit.lower().strip()
+        prod_weight, prod_unit_type = _extract_weight_grams(product_name)
+        if prod_weight is None:
+            return requested_qty
+        # Convert requested quantity to grams/ml
+        if req_unit in ('kg', 'kilo', 'kilos'):
+            req_grams = requested_qty * 1000
+        elif req_unit in ('g', 'gr', 'grs', 'gramos'):
+            req_grams = requested_qty
+        elif req_unit in ('l', 'lt', 'lts', 'litro', 'litros'):
+            req_grams = requested_qty * 1000
+        elif req_unit in ('ml', 'cc'):
+            req_grams = requested_qty
+        else:
+            return requested_qty  # Unidad, etc - just use quantity as-is
+        import math
+        return max(1, math.ceil(req_grams / prod_weight))
+
     ranking = []
     for cadena in cadenas:
         total = 0.0
@@ -1274,39 +1316,60 @@ def catalog_optimizar(body: dict):
             pid = prod.get("producto_id")
             nombre = prod.get("nombre", "")
             qty = prod.get("cantidad", 1)
+            unidad = prod.get("unidad", "")
             if pid and pid != "cualquier_marca":
                 cr.execute("SELECT nombre,marca,precio FROM vtex_productos WHERE id=%s", (pid,))
                 row = cr.fetchone()
                 if row:
-                    total += row[2] * qty
-                    selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
+                    units = _calc_units_needed(row[0], qty, unidad) if unidad else qty
+                    total += row[2] * units
+                    selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": units, "busqueda": nombre})
                 else:
                     missing.append(pid)
             else:
-                # cualquier_marca: find cheapest in this chain
+                # cualquier_marca: find cheapest in this chain considering weight
                 nombre_lower = nombre.lower().strip()
                 words = nombre_lower.split()
                 found = False
-                # Strategy 1: DB search with all words AND
                 if words:
                     conditions = " AND ".join(["nombre_lower LIKE %s"] * len(words))
                     params = [f"%{w}%" for w in words]
+                    # Get top 10 candidates to evaluate cost per unit
                     cr.execute(f"""SELECT nombre,marca,precio FROM vtex_productos 
                         WHERE cadena=%s AND {conditions} 
                         ORDER BY CASE WHEN nombre_lower LIKE %s THEN 0 WHEN nombre_lower LIKE %s THEN 1 ELSE 2 END, precio 
-                        LIMIT 1""",
+                        LIMIT 10""",
                         [cadena] + params + [f"{nombre_lower}%", f"{words[0]}%"])
-                    row = cr.fetchone()
-                    if row:
-                        total += row[2] * qty
-                        selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
-                        found = True
+                    rows = cr.fetchall()
+                    if rows:
+                        # If unit is weight-based, calculate actual cost for each candidate
+                        if unidad and unidad.lower().strip() in ('kg', 'kilo', 'kilos', 'g', 'gr', 'l', 'lt', 'litro', 'litros', 'ml', 'cc'):
+                            best_cost = None
+                            best_row = None
+                            best_units = qty
+                            for row in rows:
+                                units = _calc_units_needed(row[0], qty, unidad)
+                                cost = row[2] * units
+                                if best_cost is None or cost < best_cost:
+                                    best_cost = cost
+                                    best_row = row
+                                    best_units = units
+                            if best_row:
+                                total += best_cost
+                                selected_products.append({"nombre": best_row[0], "marca": best_row[1], "precio": best_row[2], "cantidad": best_units, "busqueda": nombre})
+                                found = True
+                        else:
+                            row = rows[0]
+                            total += row[2] * qty
+                            selected_products.append({"nombre": row[0], "marca": row[1], "precio": row[2], "cantidad": qty, "busqueda": nombre})
+                            found = True
                 # Strategy 2: Real-time VTEX API search (fallback)
                 if not found:
                     rt = _search_vtex_realtime(cadena, nombre)
                     if rt:
-                        total += rt[2] * qty
-                        selected_products.append({"nombre": rt[0], "marca": rt[1], "precio": rt[2], "cantidad": qty, "busqueda": nombre})
+                        units = _calc_units_needed(rt[0], qty, unidad) if unidad else qty
+                        total += rt[2] * units
+                        selected_products.append({"nombre": rt[0], "marca": rt[1], "precio": rt[2], "cantidad": units, "busqueda": nombre})
                         found = True
                 if not found:
                     missing.append(nombre)
