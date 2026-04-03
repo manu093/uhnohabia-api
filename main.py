@@ -739,20 +739,80 @@ def _seed_medios_pago():
 
 # More specific search terms for better results
 _SCRAPE_TERMS = [
-    "leche entera", "leche descremada", "leche larga vida",
-    "arroz largo fino", "arroz integral", "fideos spaghetti", "fideos tirabuzón",
-    "aceite girasol", "aceite oliva", "harina 000", "azúcar",
-    "yerba mate", "café instantáneo", "té en saquitos",
+    # Lácteos
+    "leche entera", "leche descremada", "leche larga vida", "leche chocolatada",
+    "leche UAT", "leche deslactosada", "crema de leche", "queso cremoso",
+    "queso rallado", "queso untable", "queso crema", "queso barra",
+    "queso port salut", "queso sardo", "queso pategras", "queso dambo",
+    "yogur natural", "yogur frutilla", "yogur bebible", "yogur griego",
+    "manteca", "dulce de leche", "ricotta", "leche en polvo",
+    # Almacén
+    "arroz largo fino", "arroz integral", "arroz doble carolina", "arroz parboil",
+    "fideos spaghetti", "fideos tirabuzón", "fideos mostachol", "fideos tallarín",
+    "fideos coditos", "fideos municiones", "harina 000", "harina leudante",
+    "azúcar", "sal fina", "sal gruesa", "aceite girasol", "aceite oliva",
+    "aceite mezcla", "vinagre", "yerba mate", "café instantáneo", "café molido",
+    "té en saquitos", "polenta", "avena", "lentejas", "garbanzos", "porotos",
+    "puré de tomate", "tomate perita", "salsa de tomate", "choclo en lata",
+    "arvejas en lata", "atún en lata", "mermelada", "miel", "cereales",
     "galletitas dulces", "galletitas saladas", "pan lactal", "pan integral",
-    "manteca", "queso cremoso", "queso rallado", "yogur natural", "yogur frutilla",
-    "huevos", "pollo entero", "pechuga pollo", "carne picada", "nalga",
-    "jamón cocido", "salchichas", "atún en lata",
-    "tomate perita", "puré de tomate", "mayonesa", "mostaza", "ketchup", "sal fina",
-    "cerveza lata", "vino tinto", "gaseosa cola", "agua mineral", "jugo naranja",
-    "detergente líquido", "jabón en polvo", "shampoo", "papel higiénico",
-    "lavandina", "desodorante", "pasta dental", "pañales",
-    "mermelada", "dulce de leche", "cereales", "avena", "polenta", "lentejas",
-    "leche chocolatada", "queso untable", "crema de leche",
+    "pan rallado", "rebozador", "caldo en cubo", "gelatina", "flan",
+    "premezcla", "levadura", "maicena", "tapas empanadas", "tapas pascualina",
+    "tapas tarta", "semillas", "frutos secos", "almendras", "nueces",
+    "pasas de uva", "coco rallado", "chocolate", "cacao", "dulce batata",
+    "dulce membrillo", "alfajor", "budín", "bizcochuelo",
+    # Condimentos y aderezos
+    "mayonesa", "mostaza", "ketchup", "salsa golf", "salsa soja",
+    "pimienta", "pimentón", "orégano", "provenzal", "chimichurri",
+    "ají molido", "comino", "cúrcuma", "nuez moscada", "laurel",
+    "aceto balsámico", "salsa barbacoa", "aderezo caesar",
+    # Carnes y fiambres
+    "carne picada", "nalga", "bife", "asado", "pollo entero", "pechuga pollo",
+    "pata muslo", "milanesa", "hamburguesa", "salchichas", "chorizo",
+    "jamón cocido", "jamón crudo", "salame", "mortadela", "bondiola",
+    "panceta", "paté", "morcilla", "matambre",
+    # Frutas y verduras
+    "manzana", "banana", "naranja", "mandarina", "limón", "pera",
+    "durazno", "uva", "frutilla", "kiwi", "ananá", "sandía", "melón",
+    "tomate", "lechuga", "cebolla", "papa", "zanahoria", "zapallo",
+    "zapallito", "berenjena", "morrón", "pepino", "espinaca", "acelga",
+    "brócoli", "coliflor", "choclo", "batata", "remolacha", "ajo",
+    "perejil", "albahaca", "rúcula",
+    # Bebidas
+    "agua mineral", "gaseosa cola", "gaseosa lima", "gaseosa naranja",
+    "jugo naranja", "jugo manzana", "jugo en polvo", "cerveza lata",
+    "cerveza botella", "vino tinto", "vino blanco", "fernet", "aperitivo",
+    "soda", "tónica", "energizante", "bebida isotónica",
+    # Limpieza
+    "detergente líquido", "jabón en polvo", "jabón líquido ropa",
+    "suavizante", "lavandina", "desinfectante", "limpiavidrios",
+    "limpiador pisos", "limpiador cocina", "limpiador baño",
+    "esponja", "trapo piso", "bolsa residuos", "papel cocina",
+    "papel higiénico", "servilletas", "insecticida", "desodorante ambiente",
+    "cera pisos", "quitamanchas", "cloro", "soda cáustica",
+    # Higiene personal
+    "shampoo", "acondicionador", "jabón tocador", "desodorante",
+    "pasta dental", "cepillo dental", "hilo dental", "enjuague bucal",
+    "crema corporal", "protector solar", "toallitas húmedas",
+    "algodón", "alcohol", "agua oxigenada", "curitas",
+    "pañales", "toallitas femeninas", "tampones", "afeitadora",
+    "espuma afeitar", "crema depilatoria",
+    # Congelados
+    "milanesa soja", "empanadas congeladas", "pizza congelada",
+    "papas fritas congeladas", "helado", "vegetales congelados",
+    "nuggets", "medallón", "suprema",
+    # Panadería y repostería
+    "facturas", "medialunas", "bizcochos", "tostadas", "grisines",
+    "prepizza", "tortillas", "pan hamburguesa", "pan pancho",
+    # Mascotas
+    "alimento perro", "alimento gato", "piedras sanitarias",
+    # Bazar y hogar
+    "broches ropa", "pinzas ropa", "fósforos", "velas",
+    "papel aluminio", "film", "bolsa freezer", "contenedor plástico",
+    "pilas", "lamparita", "foco led",
+    # Varios
+    "pañuelos descartables", "barbijo", "guantes descartables",
+    "carbón", "leña", "encendedor",
 ]
 
 def _init_catalog_db():
@@ -826,8 +886,8 @@ def _run_catalog_scraper():
                     image = images[0]["imageUrl"] if images else ""
                 except: pass
                 if price <= 0: continue
-                # Filter out invalid prices (Jumbo/Disco API sometimes returns price per gram/ml)
-                if price < 1000: continue
+                # Filter out invalid prices (very low prices are likely per gram/ml)
+                if price < 100: continue
                 # Extract presentacion from name or item
                 presentacion = ""
                 try:
@@ -889,7 +949,7 @@ def _scrape_changomas_sepa(vtex_total):
                         continue
                     pp = suc.get("preciosProducto", {})
                     precio = pp.get("precioLista")
-                    if not precio or float(precio) < 1000: continue
+                    if not precio or float(precio) < 100: continue
                     dist = suc.get("distanciaNumero", 999)
                     if dist > 15: continue
                     doc_id = f"Changomas_{pid}"
@@ -926,7 +986,82 @@ def catalog_search(q: str = Query(..., min_length=2), marca: str = Query(None), 
     sql += f" ORDER BY CASE WHEN nombre_lower LIKE %s THEN 0 ELSE 1 END, precio ASC LIMIT %s"
     params.extend([f"{q_lower}%", limit])
     cr.execute(sql, params); rows = cr.fetchall(); cr.close(); cn.close()
-    return [{"id":r[0],"nombre":r[1],"marca":r[2],"presentacion":r[3],"cadena":r[4],"precio":r[5],"precioLista":r[6],"imagen":r[7]} for r in rows]
+    results = [{"id":r[0],"nombre":r[1],"marca":r[2],"presentacion":r[3],"cadena":r[4],"precio":r[5],"precioLista":r[6],"imagen":r[7]} for r in rows]
+
+    # If few results from DB, try real-time VTEX search as fallback
+    if len(results) < 5 and not cadena:
+        _VTEX_FALLBACK = {
+            "DIA": "https://diaonline.supermercadosdia.com.ar",
+            "Jumbo": "https://www.jumbo.com.ar",
+            "Disco": "https://www.disco.com.ar",
+            "Carrefour": "https://www.carrefour.com.ar",
+            "Changomas": "https://www.masonline.com.ar",
+        }
+        existing_ids = {r["id"] for r in results}
+        for cad, base_url in _VTEX_FALLBACK.items():
+            try:
+                r = _requests.get(f"{base_url}/api/catalog_system/pub/products/search/{q}",
+                    params={"_from": 0, "_to": 9},
+                    headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"}, timeout=8)
+                if r.status_code not in (200, 206): continue
+                data = r.json()
+                if not isinstance(data, list): continue
+                for p in data[:10]:
+                    try:
+                        pid = p.get("productId", "")
+                        doc_id = f"{cad}_{pid}"
+                        if doc_id in existing_ids: continue
+                        name = p.get("productName", "")
+                        # Check all search words are in the product name
+                        name_lower = name.lower()
+                        if not all(w in name_lower for w in words): continue
+                        price = float(p["items"][0]["sellers"][0]["commertialOffer"]["Price"])
+                        if price < 100: continue
+                        brand = p.get("brand", "")
+                        if marca and marca.lower() not in brand.lower(): continue
+                        images = p.get("items", [{}])[0].get("images", [])
+                        image = images[0]["imageUrl"] if images else ""
+                        results.append({"id": doc_id, "nombre": name, "marca": brand, "presentacion": "",
+                            "cadena": cad, "precio": price, "precioLista": price, "imagen": image})
+                        existing_ids.add(doc_id)
+                    except: continue
+            except: continue
+        # Also try SEPA for Coto and other chains not in VTEX
+        try:
+            r = _requests.get(f"{SEPA_BASE_URL}/productos",
+                params={"string": q, "lat": "-34.83", "lng": "-58.39"},
+                headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+            if r.status_code == 200:
+                sepa_data = r.json()
+                for sp in sepa_data.get("productos", [])[:10]:
+                    sp_name = sp.get("nombre", "")
+                    sp_lower = sp_name.lower()
+                    if not all(w in sp_lower for w in words): continue
+                    sp_marca = sp.get("marca", "")
+                    if marca and marca.lower() not in sp_marca.lower(): continue
+                    sp_id = sp.get("id", "")
+                    # Get prices from SEPA
+                    try:
+                        pr = _requests.get(f"{SEPA_BASE_URL}/producto",
+                            params={"id_producto": sp_id, "lat": "-34.83", "lng": "-58.39"},
+                            headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+                        if pr.status_code == 200:
+                            pdata = pr.json()
+                            for suc in pdata.get("sucursales", [])[:5]:
+                                cad_name = suc.get("banderaDescripcion", "")
+                                pp = suc.get("preciosProducto", {})
+                                precio = pp.get("precioLista")
+                                if not precio or float(precio) < 100: continue
+                                doc_id = f"SEPA_{sp_id}_{cad_name[:10]}"
+                                if doc_id in existing_ids: continue
+                                results.append({"id": doc_id, "nombre": sp_name, "marca": sp_marca,
+                                    "presentacion": sp.get("presentacion", ""), "cadena": cad_name,
+                                    "precio": float(precio), "precioLista": float(precio), "imagen": ""})
+                                existing_ids.add(doc_id)
+                    except: pass
+        except: pass
+
+    return results[:limit]
 
 @app.get("/catalog/cadenas")
 def catalog_cadenas():
@@ -1048,7 +1183,7 @@ def catalog_buscar_opciones(q: str = Query(..., min_length=2)):
                         name = p.get("productName", "")
                         if name.lower() in existing_names: continue
                         price = float(p["items"][0]["sellers"][0]["commertialOffer"]["Price"])
-                        if price < 1000: continue
+                        if price < 100: continue
                         brand = p.get("brand", "")
                         key = f"{name}|{brand}"
                         if key not in groups:
@@ -1118,7 +1253,7 @@ def catalog_optimizar(body: dict):
             for p in data:
                 try:
                     price = float(p["items"][0]["sellers"][0]["commertialOffer"]["Price"])
-                    if price < 1000:
+                    if price < 100:
                         continue
                     name = p.get("productName", "")
                     brand = p.get("brand", "")
