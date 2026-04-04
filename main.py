@@ -1437,7 +1437,9 @@ def catalog_optimizar(body: dict):
         "distribucionPagos": best["distribucionPagos"] if best else [],
         "productosFaltantes": best["productosFaltantes"] if best else [],
         "productosSeleccionados": best["productosSeleccionados"] if best else [],
-        "rankingCadenas": [{"cadena":r["cadena"],"totalFinal":r["totalFinal"],"ahorro":r["ahorro"]} for r in ranking]
+        "rankingCadenas": [{"cadena":r["cadena"],"totalOriginal":r["totalOriginal"],"totalFinal":r["totalFinal"],"ahorro":r["ahorro"],
+            "ahorroPorcentaje":r["ahorroPorcentaje"],"distribucionPagos":r["distribucionPagos"],
+            "productosFaltantes":r["productosFaltantes"],"productosSeleccionados":r["productosSeleccionados"]} for r in ranking]
     }
 
 # Remove old endpoints that are no longer needed
