@@ -129,7 +129,7 @@ async def health():
 # ─── Voice Command Processing (replaces Firebase Cloud Functions) ─────────────
 
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth as firebase_auth
 import os, re, uuid
 
 # Initialize Firebase Admin SDK (optional - voice endpoints need it, price endpoints don't)
@@ -397,6 +397,23 @@ async def auth_token(
         )
     except Exception as e:
         return HTMLResponse(f"<h2>Error: {e}</h2><a href='javascript:history.back()'>Volver</a>")
+
+
+@app.post("/auth/admin-reset")
+async def admin_reset_password(body: dict):
+    """Reset a user's password using Firebase Admin SDK."""
+    if not _firebase_initialized:
+        return {"error": "Firebase not initialized"}
+    email = body.get("email", "")
+    new_password = body.get("newPassword", "")
+    if not email or not new_password or len(new_password) < 6:
+        return {"error": "Email and password (min 6 chars) required"}
+    try:
+        user = firebase_auth.get_user_by_email(email)
+        firebase_auth.update_user(user.uid, password=new_password)
+        return {"ok": True, "message": f"Password reset for {email}"}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def get_uid_from_alexa_request(body: dict) -> str:
