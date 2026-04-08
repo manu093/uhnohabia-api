@@ -381,7 +381,8 @@ async def auth_token(
                 json={"email": email, "password": password, "returnSecureToken": True}
             )
             if r.status_code != 200:
-                return HTMLResponse("<h2>Error: credenciales inválidas</h2><a href='javascript:history.back()'>Volver</a>")
+                err_detail = r.json().get("error", {}).get("message", "unknown") if r.status_code == 400 else str(r.status_code)
+                return HTMLResponse(f"<h2>Error: credenciales inválidas</h2><p>{err_detail}</p><a href='javascript:history.back()'>Volver</a>")
             data = r.json()
             uid = data["localId"]
             token = uuid.uuid4().hex
