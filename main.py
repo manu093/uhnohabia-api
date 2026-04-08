@@ -315,8 +315,30 @@ from fastapi import Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 import urllib.parse
 
-# Simple token store: maps access_token -> firebase_uid
+# Simple token store: persisted in DB to survive restarts
 _token_store: dict[str, str] = {}
+
+def _init_token_store():
+    """Create token table and load existing tokens."""
+    if not _DB_URL: return
+    try:
+        cn = psycopg2.connect(_DB_URL); cr = cn.cursor()
+        cr.execute("CREATE TABLE IF NOT EXISTS alexa_tokens (token TEXT PRIMARY KEY, uid TEXT NOT NULL, created_at TIMESTAMP DEFAULT NOW())")
+        cn.commit()
+        cr.execute("SELECT token, uid FROM alexa_tokens")
+        for row in cr.fetchall():
+            _token_store[row[0]] = row[1]
+        cr.close(); cn.close()
+    except: pass
+
+def _save_token(token: str, uid: str):
+    _token_store[token] = uid
+    if not _DB_URL: return
+    try:
+        cn = psycopg2.connect(_DB_URL); cr = cn.cursor()
+        cr.execute("INSERT INTO alexa_tokens (token, uid) VALUES (%s, %s) ON CONFLICT (token) DO UPDATE SET uid=EXCLUDED.uid", (token, uid))
+        cn.commit(); cr.close(); cn.close()
+    except: pass
 
 @app.get("/auth/login", response_class=HTMLResponse)
 async def auth_login_page(
@@ -352,7 +374,7 @@ async def auth_token(
     """Authenticate user and redirect back to Alexa with access token."""
     try:
         # Verify credentials with Firebase Auth REST API
-        api_key = os.environ.get("FIREBASE_API_KEY", "")
+        api_key = os.environ.get("FIREBASE_API_KEY", "AIzaSyA0ZD7YqjNV0Uu7cFg35wFQ8kKQRtFTHkw")
         async with httpx.AsyncClient() as client:
             r = await client.post(
                 f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}",
@@ -362,9 +384,9 @@ async def auth_token(
                 return HTMLResponse("<h2>Error: credenciales inválidas</h2><a href='javascript:history.back()'>Volver</a>")
             data = r.json()
             uid = data["localId"]
-            token = uuid.uuid4().hex  # Simple 32-char hex token
+            token = uuid.uuid4().hex
 
-        _token_store[token] = uid
+        _save_token(token, uid)
 
         # Must use client-side redirect because HTTP 302 doesn't preserve URL fragments
         fragment = f"access_token={token}&token_type=Bearer&state={urllib.parse.quote(state, safe='')}"
@@ -1450,6 +1472,7 @@ def catalog_optimizar(body: dict):
 def _on_startup():
     if _DB_URL:
         _init_catalog_db()
+        _init_token_store()
         threading.Thread(target=_run_catalog_scraper, daemon=True).start()
         from apscheduler.schedulers.background import BackgroundScheduler
         sched = BackgroundScheduler()
