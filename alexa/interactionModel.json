@@ -12,45 +12,23 @@
               "samples": [
                 "{product}"
               ]
-            },
-            {
-              "name": "list",
-              "type": "AMAZON.SearchQuery",
-              "samples": [
-                "{list}"
-              ]
-            },
-            {
-              "name": "quantity",
-              "type": "AMAZON.NUMBER",
-              "samples": [
-                "{quantity}"
-              ]
-            },
-            {
-              "name": "unit",
-              "type": "UNIT_TYPE",
-              "samples": [
-                "{unit}"
-              ]
             }
           ],
           "samples": [
-            "{product}",
             "agregar {product}",
             "agrega {product}",
             "pone {product}",
             "suma {product}",
             "necesito {product}",
-            "agregar {product} a {list}",
-            "pone {product} en {list}",
-            "agregar {quantity} {unit} de {product}",
-            "agregar {quantity} {product}",
-            "pone {quantity} {unit} de {product}",
-            "{quantity} {unit} de {product}",
-            "{quantity} {product}",
-            "{product} a la lista {list}",
-            "necesito {product} en {list}"
+            "quiero {product}",
+            "comprar {product}",
+            "anota {product}",
+            "poneme {product}",
+            "agrega a la lista {product}",
+            "pone en la lista {product}",
+            "necesito comprar {product}",
+            "quiero comprar {product}",
+            "anota en la lista {product}"
           ]
         },
         {
@@ -70,23 +48,7 @@
           "samples": []
         }
       ],
-      "types": [
-        {
-          "name": "UNIT_TYPE",
-          "values": [
-            { "name": { "value": "unidad", "synonyms": ["unidades", "u"] } },
-            { "name": { "value": "kilogramo", "synonyms": ["kilogramos", "kilo", "kilos", "kg"] } },
-            { "name": { "value": "gramo", "synonyms": ["gramos", "gr", "g"] } },
-            { "name": { "value": "litro", "synonyms": ["litros", "lt", "l"] } },
-            { "name": { "value": "mililitro", "synonyms": ["mililitros", "ml"] } },
-            { "name": { "value": "docena", "synonyms": ["docenas"] } },
-            { "name": { "value": "paquete", "synonyms": ["paquetes"] } },
-            { "name": { "value": "botella", "synonyms": ["botellas"] } },
-            { "name": { "value": "lata", "synonyms": ["latas"] } },
-            { "name": { "value": "caja", "synonyms": ["cajas"] } }
-          ]
-        }
-      ]
+      "types": []
     },
     "dialog": {
       "intents": [
@@ -99,35 +61,26 @@
               "name": "product",
               "type": "AMAZON.SearchQuery",
               "confirmationRequired": false,
-              "elicitationRequired": false,
-              "prompts": {}
-            },
-            {
-              "name": "list",
-              "type": "AMAZON.SearchQuery",
-              "confirmationRequired": false,
-              "elicitationRequired": false,
-              "prompts": {}
-            },
-            {
-              "name": "quantity",
-              "type": "AMAZON.NUMBER",
-              "confirmationRequired": false,
-              "elicitationRequired": false,
-              "prompts": {}
-            },
-            {
-              "name": "unit",
-              "type": "UNIT_TYPE",
-              "confirmationRequired": false,
-              "elicitationRequired": false,
-              "prompts": {}
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.product"
+              }
             }
           ]
         }
       ],
       "delegationStrategy": "ALWAYS"
     },
-    "prompts": []
+    "prompts": [
+      {
+        "id": "Elicit.Slot.product",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Que producto agrego?"
+          }
+        ]
+      }
+    ]
   }
 }
