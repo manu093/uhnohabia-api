@@ -8,13 +8,11 @@
           "slots": [
             {
               "name": "product",
-              "type": "AMAZON.SearchQuery",
-              "samples": [
-                "{product}"
-              ]
+              "type": "PRODUCT_NAME"
             }
           ],
           "samples": [
+            "{product}",
             "agregar {product}",
             "agrega {product}",
             "pone {product}",
@@ -23,12 +21,7 @@
             "quiero {product}",
             "comprar {product}",
             "anota {product}",
-            "poneme {product}",
-            "agrega a la lista {product}",
-            "pone en la lista {product}",
-            "necesito comprar {product}",
-            "quiero comprar {product}",
-            "anota en la lista {product}"
+            "poneme {product}"
           ]
         },
         {
@@ -48,7 +41,53 @@
           "samples": []
         }
       ],
-      "types": []
+      "types": [
+        {
+          "name": "PRODUCT_NAME",
+          "values": [
+            {"name": {"value": "leche"}},
+            {"name": {"value": "pan"}},
+            {"name": {"value": "azucar"}},
+            {"name": {"value": "arroz"}},
+            {"name": {"value": "fideos"}},
+            {"name": {"value": "aceite"}},
+            {"name": {"value": "harina"}},
+            {"name": {"value": "yerba"}},
+            {"name": {"value": "cafe"}},
+            {"name": {"value": "huevos"}},
+            {"name": {"value": "queso"}},
+            {"name": {"value": "manteca"}},
+            {"name": {"value": "yogur"}},
+            {"name": {"value": "pollo"}},
+            {"name": {"value": "carne"}},
+            {"name": {"value": "jamon"}},
+            {"name": {"value": "tomate"}},
+            {"name": {"value": "cebolla"}},
+            {"name": {"value": "papa"}},
+            {"name": {"value": "banana"}},
+            {"name": {"value": "manzana"}},
+            {"name": {"value": "naranja"}},
+            {"name": {"value": "cerveza"}},
+            {"name": {"value": "vino"}},
+            {"name": {"value": "gaseosa"}},
+            {"name": {"value": "agua"}},
+            {"name": {"value": "jugo"}},
+            {"name": {"value": "galletitas"}},
+            {"name": {"value": "jabon"}},
+            {"name": {"value": "shampoo"}},
+            {"name": {"value": "papel higienico"}},
+            {"name": {"value": "detergente"}},
+            {"name": {"value": "lavandina"}},
+            {"name": {"value": "desodorante"}},
+            {"name": {"value": "servilletas"}},
+            {"name": {"value": "mayonesa"}},
+            {"name": {"value": "sal"}},
+            {"name": {"value": "pimienta"}},
+            {"name": {"value": "dulce de leche"}},
+            {"name": {"value": "mermelada"}}
+          ]
+        }
+      ]
     },
     "dialog": {
       "intents": [
@@ -59,7 +98,7 @@
           "slots": [
             {
               "name": "product",
-              "type": "AMAZON.SearchQuery",
+              "type": "PRODUCT_NAME",
               "confirmationRequired": false,
               "elicitationRequired": true,
               "prompts": {
