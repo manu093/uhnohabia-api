@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "mi lista",
+      "invocationName": "mi mercado",
       "intents": [
         {
           "name": "AddProductIntent",

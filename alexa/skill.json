@@ -6,8 +6,8 @@
           "summary": "Agregá productos a tus listas de compras con la voz",
           "examplePhrases": [
             "Alexa, abrí Lista de Compras",
-            "Alexa, decile a mi lista leche",
-            "Alexa, decile a mi lista azucar"
+            "Alexa, decile a mi mercado leche",
+            "Alexa, decile a mi mercado azucar"
           ],
           "keywords": [
             "lista de compras",
@@ -17,11 +17,11 @@
             "compartida"
           ],
           "name": "Lista de Compras Compartidas",
-          "description": "Usá Alexa para agregar productos a tus listas de compras compartidas. Podés decir \"Agregar leche a mi lista del super\" y el producto se agrega automáticamente. Soporta múltiples productos, cantidades y unidades."
+          "description": "Usá Alexa para agregar productos a tus listas de compras compartidas. Podés decir \"Agregar leche a mi mercado del super\" y el producto se agrega automáticamente. Soporta múltiples productos, cantidades y unidades."
         }
       },
       "isAvailableWorldwide": false,
-      "testingInstructions": "1. Vincular cuenta con Firebase Auth. 2. Decir: Alexa, abrí Lista de Compras. 3. Decir: Agregar leche a mi lista del super.",
+      "testingInstructions": "1. Vincular cuenta con Firebase Auth. 2. Decir: Alexa, abrí Lista de Compras. 3. Decir: Agregar leche a mi mercado del super.",
       "category": "SHOPPING",
       "distributionCountries": [
         "AR"
