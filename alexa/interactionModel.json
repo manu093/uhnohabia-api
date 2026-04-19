@@ -8,7 +8,7 @@
           "slots": [
             {
               "name": "product",
-              "type": "AMAZON.Food"
+              "type": "PRODUCT_NAME"
             }
           ],
           "samples": [
@@ -41,7 +41,77 @@
           "samples": []
         }
       ],
-      "types": []
+      "types": [
+        {
+          "name": "PRODUCT_NAME",
+          "values": [
+            {"name": {"value": "leche", "synonyms": ["leche entera", "leche descremada"]}},
+            {"name": {"value": "pan", "synonyms": ["pan lactal", "pan de molde"]}},
+            {"name": {"value": "azucar"}},
+            {"name": {"value": "arroz"}},
+            {"name": {"value": "fideos", "synonyms": ["pasta", "tallarines"]}},
+            {"name": {"value": "aceite"}},
+            {"name": {"value": "harina"}},
+            {"name": {"value": "yerba"}},
+            {"name": {"value": "cafe"}},
+            {"name": {"value": "huevos"}},
+            {"name": {"value": "queso", "synonyms": ["queso cremoso", "queso rallado"]}},
+            {"name": {"value": "manteca"}},
+            {"name": {"value": "yogur"}},
+            {"name": {"value": "pollo"}},
+            {"name": {"value": "carne", "synonyms": ["carne picada", "carne molida"]}},
+            {"name": {"value": "jamon"}},
+            {"name": {"value": "tomate"}},
+            {"name": {"value": "cebolla"}},
+            {"name": {"value": "papa"}},
+            {"name": {"value": "banana"}},
+            {"name": {"value": "manzana"}},
+            {"name": {"value": "naranja"}},
+            {"name": {"value": "fernet", "synonyms": ["fernet branca"]}},
+            {"name": {"value": "cerveza"}},
+            {"name": {"value": "vino"}},
+            {"name": {"value": "gaseosa", "synonyms": ["coca cola", "sprite", "fanta"]}},
+            {"name": {"value": "agua"}},
+            {"name": {"value": "jugo"}},
+            {"name": {"value": "galletitas", "synonyms": ["galletas", "bizcochitos"]}},
+            {"name": {"value": "jabon"}},
+            {"name": {"value": "shampoo"}},
+            {"name": {"value": "papel higienico"}},
+            {"name": {"value": "detergente"}},
+            {"name": {"value": "lavandina"}},
+            {"name": {"value": "desodorante"}},
+            {"name": {"value": "servilletas"}},
+            {"name": {"value": "mayonesa"}},
+            {"name": {"value": "sal"}},
+            {"name": {"value": "dulce de leche"}},
+            {"name": {"value": "mermelada"}},
+            {"name": {"value": "atun"}},
+            {"name": {"value": "salchichas"}},
+            {"name": {"value": "pure de tomate"}},
+            {"name": {"value": "polenta"}},
+            {"name": {"value": "avena"}},
+            {"name": {"value": "lentejas"}},
+            {"name": {"value": "chocolate"}},
+            {"name": {"value": "helado"}},
+            {"name": {"value": "pañales"}},
+            {"name": {"value": "pasta dental"}},
+            {"name": {"value": "papel aluminio"}},
+            {"name": {"value": "film"}},
+            {"name": {"value": "esponja"}},
+            {"name": {"value": "trapo de piso"}},
+            {"name": {"value": "suavizante"}},
+            {"name": {"value": "lechuga"}},
+            {"name": {"value": "zanahoria"}},
+            {"name": {"value": "palta"}},
+            {"name": {"value": "limon"}},
+            {"name": {"value": "ajo"}},
+            {"name": {"value": "morron"}},
+            {"name": {"value": "whisky"}},
+            {"name": {"value": "vodka"}},
+            {"name": {"value": "ron"}}
+          ]
+        }
+      ]
     },
     "dialog": {
       "intents": [
@@ -52,7 +122,7 @@
           "slots": [
             {
               "name": "product",
-              "type": "AMAZON.Food",
+              "type": "PRODUCT_NAME",
               "confirmationRequired": false,
               "elicitationRequired": true,
               "prompts": {
