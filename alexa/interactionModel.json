@@ -1,0 +1,133 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "mi lista",
+      "intents": [
+        {
+          "name": "AddProductIntent",
+          "slots": [
+            {
+              "name": "product",
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "{product}"
+              ]
+            },
+            {
+              "name": "list",
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "{list}"
+              ]
+            },
+            {
+              "name": "quantity",
+              "type": "AMAZON.NUMBER",
+              "samples": [
+                "{quantity}"
+              ]
+            },
+            {
+              "name": "unit",
+              "type": "UNIT_TYPE",
+              "samples": [
+                "{unit}"
+              ]
+            }
+          ],
+          "samples": [
+            "{product}",
+            "agregar {product}",
+            "agrega {product}",
+            "pone {product}",
+            "suma {product}",
+            "necesito {product}",
+            "agregar {product} a {list}",
+            "pone {product} en {list}",
+            "agregar {quantity} {unit} de {product}",
+            "agregar {quantity} {product}",
+            "pone {quantity} {unit} de {product}",
+            "{quantity} {unit} de {product}",
+            "{quantity} {product}",
+            "{product} a la lista {list}",
+            "necesito {product} en {list}"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
+      ],
+      "types": [
+        {
+          "name": "UNIT_TYPE",
+          "values": [
+            { "name": { "value": "unidad", "synonyms": ["unidades", "u"] } },
+            { "name": { "value": "kilogramo", "synonyms": ["kilogramos", "kilo", "kilos", "kg"] } },
+            { "name": { "value": "gramo", "synonyms": ["gramos", "gr", "g"] } },
+            { "name": { "value": "litro", "synonyms": ["litros", "lt", "l"] } },
+            { "name": { "value": "mililitro", "synonyms": ["mililitros", "ml"] } },
+            { "name": { "value": "docena", "synonyms": ["docenas"] } },
+            { "name": { "value": "paquete", "synonyms": ["paquetes"] } },
+            { "name": { "value": "botella", "synonyms": ["botellas"] } },
+            { "name": { "value": "lata", "synonyms": ["latas"] } },
+            { "name": { "value": "caja", "synonyms": ["cajas"] } }
+          ]
+        }
+      ]
+    },
+    "dialog": {
+      "intents": [
+        {
+          "name": "AddProductIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "product",
+              "type": "AMAZON.SearchQuery",
+              "confirmationRequired": false,
+              "elicitationRequired": false,
+              "prompts": {}
+            },
+            {
+              "name": "list",
+              "type": "AMAZON.SearchQuery",
+              "confirmationRequired": false,
+              "elicitationRequired": false,
+              "prompts": {}
+            },
+            {
+              "name": "quantity",
+              "type": "AMAZON.NUMBER",
+              "confirmationRequired": false,
+              "elicitationRequired": false,
+              "prompts": {}
+            },
+            {
+              "name": "unit",
+              "type": "UNIT_TYPE",
+              "confirmationRequired": false,
+              "elicitationRequired": false,
+              "prompts": {}
+            }
+          ]
+        }
+      ],
+      "delegationStrategy": "ALWAYS"
+    },
+    "prompts": []
+  }
+}
