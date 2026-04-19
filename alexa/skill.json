@@ -1,0 +1,65 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "es-AR": {
+          "summary": "Agregá productos a tus listas de compras con la voz",
+          "examplePhrases": [
+            "Alexa, abrí Lista de Compras",
+            "Alexa, decile a mi lista leche",
+            "Alexa, decile a mi lista azucar"
+          ],
+          "keywords": [
+            "lista de compras",
+            "supermercado",
+            "compras",
+            "productos",
+            "compartida"
+          ],
+          "name": "Lista de Compras Compartidas",
+          "description": "Usá Alexa para agregar productos a tus listas de compras compartidas. Podés decir \"Agregar leche a mi lista del super\" y el producto se agrega automáticamente. Soporta múltiples productos, cantidades y unidades."
+        }
+      },
+      "isAvailableWorldwide": false,
+      "testingInstructions": "1. Vincular cuenta con Firebase Auth. 2. Decir: Alexa, abrí Lista de Compras. 3. Decir: Agregar leche a mi lista del super.",
+      "category": "SHOPPING",
+      "distributionCountries": [
+        "AR"
+      ]
+    },
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "uri": "https://colonial-albertine-pepin-5207cd9b.koyeb.app/voice/alexa"
+        },
+        "interfaces": []
+      }
+    },
+    "manifestVersion": "1.0",
+    "privacyAndCompliance": {
+      "allowsPurchases": false,
+      "locales": {
+        "es-AR": {
+          "privacyPolicyUrl": "https://shared-shopping-lists-dev.web.app/privacy",
+          "termsOfUseUrl": "https://shared-shopping-lists-dev.web.app/terms"
+        }
+      },
+      "isExportCompliant": true,
+      "containsAds": false,
+      "isChildDirected": false,
+      "usesPersonalInfo": true
+    },
+    "permissions": [],
+    "accountLinkingInfo": {
+      "accessTokenUrl": "https://colonial-albertine-pepin-5207cd9b.koyeb.app/auth/token",
+      "authorizationUrl": "https://colonial-albertine-pepin-5207cd9b.koyeb.app/auth/login",
+      "clientId": "alexa-uhnohabia",
+      "clientSecret": "uhnohabia-alexa-secret",
+      "accessTokenScheme": "HTTP_BASIC",
+      "scopes": [],
+      "domains": [],
+      "defaultTokenExpirationInSeconds": 0,
+      "type": "IMPLICIT"
+    }
+  }
+}
