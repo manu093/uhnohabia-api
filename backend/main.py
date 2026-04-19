@@ -214,27 +214,44 @@ async def process_alexa_skill(body: dict):
         return alexa_response("Servicio de voz no disponible.", True)
     req = body.get("request", {})
     intent_name = req.get("intent", {}).get("name", "")
+    session_attrs = body.get("session", {}).get("attributes", {}) or {}
+    waiting_for_product = session_attrs.get("waitingForProduct", False)
+
+    # LaunchRequest: user said "abrir mi mercado"
     if req.get("type") == "LaunchRequest":
-        return alexa_response("Decime que producto agregar.", False)
+        return alexa_response_with_attrs("Que producto agrego?", False, {"waitingForProduct": True})
+
     if intent_name in ("AMAZON.StopIntent", "AMAZON.CancelIntent"):
         return alexa_response("Listo.", True)
+
     if intent_name == "AMAZON.HelpIntent":
-        return alexa_response("Podes decir el nombre de un producto. Por ejemplo: leche, pan, azucar.", False)
-    if req.get("type") != "IntentRequest":
-        return alexa_response("Decime que producto agregar.", False)
-    slots = req.get("intent", {}).get("slots", {})
+        return alexa_response("Podes decir el nombre de un producto. Por ejemplo: agrega leche.", False)
+
+    # FallbackIntent: user said something that didnt match any intent
+    # If we are waiting for a product, treat the raw input as product name
+    if intent_name == "AMAZON.FallbackIntent" and waiting_for_product:
+        # Try to get raw input from the request
+        raw_input = req.get("intent", {}).get("slots", {}).get("product", {}).get("value", "")
+        if not raw_input:
+            return alexa_response_with_attrs("No entendi. Decime el producto que queres agregar.", False, {"waitingForProduct": True})
+        product_name = raw_input
+    elif intent_name == "AMAZON.FallbackIntent":
+        return alexa_response_with_attrs("Que producto agrego?", False, {"waitingForProduct": True})
+    elif req.get("type") == "IntentRequest" and intent_name == "AddProductIntent":
+        slots = req.get("intent", {}).get("slots", {})
+        product_name = slots.get("product", {}).get("value", "")
+        if not product_name:
+            return alexa_response_with_attrs("No entendi. Decime el producto, por ejemplo: agrega leche.", False, {"waitingForProduct": True})
+    else:
+        return alexa_response_with_attrs("Que producto agrego?", False, {"waitingForProduct": True})
+
     user_id = get_uid_from_alexa_request(body)
-    product_name = slots.get("product", {}).get("value", "")
-    if not product_name:
-        return alexa_response("No entendi. Decime el producto, por ejemplo: leche.", False)
     cmd = VoiceCommand(
         userId=user_id, productName=product_name,
-        listName=slots.get("list", {}).get("value"),
-        quantity=slots.get("quantity", {}).get("value"),
-        unit=slots.get("unit", {}).get("value")
+        listName=None, quantity=None, unit=None
     )
     result = await process_voice_command(cmd)
-    return alexa_response("Listo, " + result["message"], False)ecios Claros y expone una API limpia para la app Android.
+    return alexa_response_with_attrs("Listo, " + result["message"] + ". Algo mas?", False, {"waitingForProduct": True})ecios Claros y expone una API limpia para la app Android.
 """
 
 from fastapi import FastAPI, Query

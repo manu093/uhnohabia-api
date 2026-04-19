@@ -8,11 +8,13 @@
           "slots": [
             {
               "name": "product",
-              "type": "PRODUCT_NAME"
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "{product}"
+              ]
             }
           ],
           "samples": [
-            "{product}",
             "agregar {product}",
             "agrega {product}",
             "pone {product}",
@@ -21,7 +23,9 @@
             "quiero {product}",
             "comprar {product}",
             "anota {product}",
-            "poneme {product}"
+            "poneme {product}",
+            "agrega a la lista {product}",
+            "pone en la lista {product}"
           ]
         },
         {
@@ -41,120 +45,7 @@
           "samples": []
         }
       ],
-      "types": [
-        {
-          "name": "PRODUCT_NAME",
-          "values": [
-            {"name": {"value": "leche", "synonyms": ["leche entera", "leche descremada", "leche deslactosada"]}},
-            {"name": {"value": "pan", "synonyms": ["pan lactal", "pan de molde", "pan negro"]}},
-            {"name": {"value": "azucar", "synonyms": ["azucar comun", "azucar impalpable"]}},
-            {"name": {"value": "arroz", "synonyms": ["arroz largo", "arroz integral"]}},
-            {"name": {"value": "fideos", "synonyms": ["pasta", "tallarines", "mostacholes", "tirabuzones"]}},
-            {"name": {"value": "aceite", "synonyms": ["aceite de girasol", "aceite de oliva"]}},
-            {"name": {"value": "harina", "synonyms": ["harina comun", "harina leudante"]}},
-            {"name": {"value": "yerba", "synonyms": ["yerba mate"]}},
-            {"name": {"value": "cafe", "synonyms": ["cafe molido", "cafe instantaneo"]}},
-            {"name": {"value": "huevos", "synonyms": ["huevo"]}},
-            {"name": {"value": "queso", "synonyms": ["queso cremoso", "queso rallado", "queso untable"]}},
-            {"name": {"value": "manteca"}},
-            {"name": {"value": "yogur", "synonyms": ["yogurt"]}},
-            {"name": {"value": "pollo", "synonyms": ["pechuga", "pata muslo"]}},
-            {"name": {"value": "carne", "synonyms": ["carne picada", "carne molida", "bife"]}},
-            {"name": {"value": "jamon", "synonyms": ["jamon cocido", "jamon crudo"]}},
-            {"name": {"value": "tomate", "synonyms": ["tomates"]}},
-            {"name": {"value": "cebolla", "synonyms": ["cebolla morada"]}},
-            {"name": {"value": "papa", "synonyms": ["papas", "patata"]}},
-            {"name": {"value": "banana", "synonyms": ["bananas"]}},
-            {"name": {"value": "manzana", "synonyms": ["manzanas"]}},
-            {"name": {"value": "naranja", "synonyms": ["naranjas"]}},
-            {"name": {"value": "fernet", "synonyms": ["fernet branca"]}},
-            {"name": {"value": "cerveza", "synonyms": ["birra"]}},
-            {"name": {"value": "vino", "synonyms": ["vino tinto", "vino blanco"]}},
-            {"name": {"value": "gaseosa", "synonyms": ["coca cola", "sprite", "fanta", "coca"]}},
-            {"name": {"value": "agua", "synonyms": ["agua mineral"]}},
-            {"name": {"value": "jugo", "synonyms": ["jugo de naranja"]}},
-            {"name": {"value": "galletitas", "synonyms": ["galletas", "bizcochitos", "galletitas dulces", "galletitas saladas"]}},
-            {"name": {"value": "jabon", "synonyms": ["jabon en polvo", "jabon liquido"]}},
-            {"name": {"value": "shampoo", "synonyms": ["champu", "champoo"]}},
-            {"name": {"value": "papel higienico", "synonyms": ["papel", "rollo de papel"]}},
-            {"name": {"value": "detergente", "synonyms": ["lavavajillas"]}},
-            {"name": {"value": "lavandina", "synonyms": ["cloro"]}},
-            {"name": {"value": "desodorante", "synonyms": ["antitranspirante"]}},
-            {"name": {"value": "servilletas"}},
-            {"name": {"value": "mayonesa", "synonyms": ["mayo"]}},
-            {"name": {"value": "sal", "synonyms": ["sal fina", "sal gruesa"]}},
-            {"name": {"value": "dulce de leche"}},
-            {"name": {"value": "mermelada"}},
-            {"name": {"value": "atun", "synonyms": ["atun en lata"]}},
-            {"name": {"value": "salchichas", "synonyms": ["panchos"]}},
-            {"name": {"value": "pure de tomate", "synonyms": ["salsa de tomate"]}},
-            {"name": {"value": "polenta"}},
-            {"name": {"value": "avena"}},
-            {"name": {"value": "lentejas"}},
-            {"name": {"value": "chocolate", "synonyms": ["chocolates"]}},
-            {"name": {"value": "helado"}},
-            {"name": {"value": "paniales", "synonyms": ["panales"]}},
-            {"name": {"value": "pasta dental", "synonyms": ["dentifrico"]}},
-            {"name": {"value": "papel aluminio"}},
-            {"name": {"value": "film", "synonyms": ["film transparente"]}},
-            {"name": {"value": "esponja", "synonyms": ["esponja de cocina"]}},
-            {"name": {"value": "trapo de piso", "synonyms": ["trapo"]}},
-            {"name": {"value": "suavizante", "synonyms": ["suavizante para ropa"]}},
-            {"name": {"value": "lechuga"}},
-            {"name": {"value": "zanahoria", "synonyms": ["zanahorias"]}},
-            {"name": {"value": "palta", "synonyms": ["aguacate"]}},
-            {"name": {"value": "limon", "synonyms": ["limones"]}},
-            {"name": {"value": "ajo"}},
-            {"name": {"value": "morron", "synonyms": ["pimiento"]}},
-            {"name": {"value": "whisky", "synonyms": ["whiskey"]}},
-            {"name": {"value": "vodka"}},
-            {"name": {"value": "ron"}},
-            {"name": {"value": "fiambre", "synonyms": ["fiambres"]}},
-            {"name": {"value": "salame", "synonyms": ["salamin"]}},
-            {"name": {"value": "queso crema", "synonyms": ["casancrem"]}},
-            {"name": {"value": "crema", "synonyms": ["crema de leche"]}},
-            {"name": {"value": "medialunas"}},
-            {"name": {"value": "facturas"}},
-            {"name": {"value": "tostadas"}},
-            {"name": {"value": "cereales"}},
-            {"name": {"value": "te", "synonyms": ["te en saquitos"]}},
-            {"name": {"value": "mate cocido"}},
-            {"name": {"value": "soda"}},
-            {"name": {"value": "ketchup"}},
-            {"name": {"value": "mostaza"}},
-            {"name": {"value": "pimienta"}},
-            {"name": {"value": "oregano"}},
-            {"name": {"value": "vinagre"}},
-            {"name": {"value": "aceto", "synonyms": ["aceto balsamico"]}},
-            {"name": {"value": "repasador"}},
-            {"name": {"value": "bolsas de basura", "synonyms": ["bolsas de residuos"]}},
-            {"name": {"value": "insecticida", "synonyms": ["raid"]}},
-            {"name": {"value": "alcohol", "synonyms": ["alcohol en gel"]}},
-            {"name": {"value": "toallitas", "synonyms": ["toallitas humedas"]}},
-            {"name": {"value": "acondicionador"}},
-            {"name": {"value": "crema de enjuague"}},
-            {"name": {"value": "protector solar"}},
-            {"name": {"value": "preservativos", "synonyms": ["forros"]}},
-            {"name": {"value": "pilas", "synonyms": ["baterias"]}},
-            {"name": {"value": "fosforos", "synonyms": ["encendedor"]}},
-            {"name": {"value": "velas"}},
-            {"name": {"value": "fideo moño", "synonyms": ["tirabuzones"]}},
-            {"name": {"value": "ravioles"}},
-            {"name": {"value": "tapas de empanada", "synonyms": ["tapas de empanadas"]}},
-            {"name": {"value": "tapas de tarta"}},
-            {"name": {"value": "milanesas"}},
-            {"name": {"value": "hamburguesas"}},
-            {"name": {"value": "papas fritas", "synonyms": ["papas congeladas"]}},
-            {"name": {"value": "arvejas"}},
-            {"name": {"value": "choclo", "synonyms": ["maiz"]}},
-            {"name": {"value": "durazno", "synonyms": ["duraznos en almibar"]}},
-            {"name": {"value": "frutilla", "synonyms": ["frutillas"]}},
-            {"name": {"value": "uva", "synonyms": ["uvas"]}},
-            {"name": {"value": "sandia"}},
-            {"name": {"value": "melon"}}
-          ]
-        }
-      ]
+      "types": []
     },
     "dialog": {
       "intents": [
@@ -165,28 +56,16 @@
           "slots": [
             {
               "name": "product",
-              "type": "PRODUCT_NAME",
+              "type": "AMAZON.SearchQuery",
               "confirmationRequired": false,
-              "elicitationRequired": true,
-              "prompts": {
-                "elicitation": "Elicit.Slot.product"
-              }
+              "elicitationRequired": false,
+              "prompts": {}
             }
           ]
         }
       ],
-      "delegationStrategy": "ALWAYS"
+      "delegationStrategy": "SKILL_RESPONSE"
     },
-    "prompts": [
-      {
-        "id": "Elicit.Slot.product",
-        "variations": [
-          {
-            "type": "PlainText",
-            "value": "Que producto agrego?"
-          }
-        ]
-      }
-    ]
+    "prompts": []
   }
 }
