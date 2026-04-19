@@ -8,7 +8,7 @@
           "slots": [
             {
               "name": "product",
-              "type": "PRODUCT_NAME"
+              "type": "AMAZON.Food"
             }
           ],
           "samples": [
@@ -41,53 +41,7 @@
           "samples": []
         }
       ],
-      "types": [
-        {
-          "name": "PRODUCT_NAME",
-          "values": [
-            {"name": {"value": "leche"}},
-            {"name": {"value": "pan"}},
-            {"name": {"value": "azucar"}},
-            {"name": {"value": "arroz"}},
-            {"name": {"value": "fideos"}},
-            {"name": {"value": "aceite"}},
-            {"name": {"value": "harina"}},
-            {"name": {"value": "yerba"}},
-            {"name": {"value": "cafe"}},
-            {"name": {"value": "huevos"}},
-            {"name": {"value": "queso"}},
-            {"name": {"value": "manteca"}},
-            {"name": {"value": "yogur"}},
-            {"name": {"value": "pollo"}},
-            {"name": {"value": "carne"}},
-            {"name": {"value": "jamon"}},
-            {"name": {"value": "tomate"}},
-            {"name": {"value": "cebolla"}},
-            {"name": {"value": "papa"}},
-            {"name": {"value": "banana"}},
-            {"name": {"value": "manzana"}},
-            {"name": {"value": "naranja"}},
-            {"name": {"value": "cerveza"}},
-            {"name": {"value": "vino"}},
-            {"name": {"value": "gaseosa"}},
-            {"name": {"value": "agua"}},
-            {"name": {"value": "jugo"}},
-            {"name": {"value": "galletitas"}},
-            {"name": {"value": "jabon"}},
-            {"name": {"value": "shampoo"}},
-            {"name": {"value": "papel higienico"}},
-            {"name": {"value": "detergente"}},
-            {"name": {"value": "lavandina"}},
-            {"name": {"value": "desodorante"}},
-            {"name": {"value": "servilletas"}},
-            {"name": {"value": "mayonesa"}},
-            {"name": {"value": "sal"}},
-            {"name": {"value": "pimienta"}},
-            {"name": {"value": "dulce de leche"}},
-            {"name": {"value": "mermelada"}}
-          ]
-        }
-      ]
+      "types": []
     },
     "dialog": {
       "intents": [
@@ -98,7 +52,7 @@
           "slots": [
             {
               "name": "product",
-              "type": "PRODUCT_NAME",
+              "type": "AMAZON.Food",
               "confirmationRequired": false,
               "elicitationRequired": true,
               "prompts": {
