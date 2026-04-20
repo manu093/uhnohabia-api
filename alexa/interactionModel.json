@@ -8,10 +8,11 @@
           "slots": [
             {
               "name": "product",
-              "type": "AMAZON.SearchQuery"
+              "type": "PRODUCT_NAME"
             }
           ],
           "samples": [
+            "{product}",
             "agregar {product}",
             "agrega {product}",
             "pone {product}",
@@ -20,9 +21,7 @@
             "quiero {product}",
             "comprar {product}",
             "anota {product}",
-            "poneme {product}",
-            "agrega a la lista {product}",
-            "pone en la lista {product}"
+            "poneme {product}"
           ]
         },
         {
@@ -42,7 +41,54 @@
           "samples": []
         }
       ],
-      "types": []
+      "types": [
+        {
+          "name": "PRODUCT_NAME",
+          "values": [
+            {"name": {"value": "leche"}}, {"name": {"value": "pan"}}, {"name": {"value": "azucar"}},
+            {"name": {"value": "arroz"}}, {"name": {"value": "fideos"}}, {"name": {"value": "aceite"}},
+            {"name": {"value": "harina"}}, {"name": {"value": "yerba"}}, {"name": {"value": "cafe"}},
+            {"name": {"value": "huevos"}}, {"name": {"value": "queso"}}, {"name": {"value": "manteca"}},
+            {"name": {"value": "yogur"}}, {"name": {"value": "pollo"}}, {"name": {"value": "carne"}},
+            {"name": {"value": "jamon"}}, {"name": {"value": "tomate"}}, {"name": {"value": "cebolla"}},
+            {"name": {"value": "papa"}}, {"name": {"value": "banana"}}, {"name": {"value": "manzana"}},
+            {"name": {"value": "naranja"}}, {"name": {"value": "fernet"}}, {"name": {"value": "cerveza"}},
+            {"name": {"value": "vino"}}, {"name": {"value": "gaseosa"}}, {"name": {"value": "agua"}},
+            {"name": {"value": "jugo"}}, {"name": {"value": "galletitas"}}, {"name": {"value": "jabon"}},
+            {"name": {"value": "shampoo"}}, {"name": {"value": "champu"}}, {"name": {"value": "papel higienico"}},
+            {"name": {"value": "detergente"}}, {"name": {"value": "lavandina"}}, {"name": {"value": "desodorante"}},
+            {"name": {"value": "servilletas"}}, {"name": {"value": "mayonesa"}}, {"name": {"value": "sal"}},
+            {"name": {"value": "dulce de leche"}}, {"name": {"value": "mermelada"}}, {"name": {"value": "atun"}},
+            {"name": {"value": "salchichas"}}, {"name": {"value": "pure de tomate"}}, {"name": {"value": "polenta"}},
+            {"name": {"value": "avena"}}, {"name": {"value": "lentejas"}}, {"name": {"value": "chocolate"}},
+            {"name": {"value": "helado"}}, {"name": {"value": "paniales"}}, {"name": {"value": "pasta dental"}},
+            {"name": {"value": "papel aluminio"}}, {"name": {"value": "esponja"}}, {"name": {"value": "suavizante"}},
+            {"name": {"value": "lechuga"}}, {"name": {"value": "zanahoria"}}, {"name": {"value": "palta"}},
+            {"name": {"value": "limon"}}, {"name": {"value": "ajo"}}, {"name": {"value": "morron"}},
+            {"name": {"value": "whisky"}}, {"name": {"value": "vodka"}}, {"name": {"value": "ron"}},
+            {"name": {"value": "salame"}}, {"name": {"value": "crema"}}, {"name": {"value": "medialunas"}},
+            {"name": {"value": "facturas"}}, {"name": {"value": "tostadas"}}, {"name": {"value": "cereales"}},
+            {"name": {"value": "te"}}, {"name": {"value": "soda"}}, {"name": {"value": "ketchup"}},
+            {"name": {"value": "mostaza"}}, {"name": {"value": "pimienta"}}, {"name": {"value": "oregano"}},
+            {"name": {"value": "vinagre"}}, {"name": {"value": "bolsas de basura"}}, {"name": {"value": "alcohol"}},
+            {"name": {"value": "acondicionador"}}, {"name": {"value": "protector solar"}},
+            {"name": {"value": "pilas"}}, {"name": {"value": "velas"}}, {"name": {"value": "ravioles"}},
+            {"name": {"value": "tapas de empanada"}}, {"name": {"value": "milanesas"}},
+            {"name": {"value": "hamburguesas"}}, {"name": {"value": "papas fritas"}},
+            {"name": {"value": "arvejas"}}, {"name": {"value": "choclo"}}, {"name": {"value": "frutilla"}},
+            {"name": {"value": "sandia"}}, {"name": {"value": "melon"}}, {"name": {"value": "durazno"}},
+            {"name": {"value": "coca cola"}}, {"name": {"value": "sprite"}}, {"name": {"value": "pepsi"}},
+            {"name": {"value": "mantequilla"}}, {"name": {"value": "margarina"}}, {"name": {"value": "gelatina"}},
+            {"name": {"value": "flan"}}, {"name": {"value": "postre"}}, {"name": {"value": "alfajor"}},
+            {"name": {"value": "bizcochuelo"}}, {"name": {"value": "levadura"}}, {"name": {"value": "cacao"}},
+            {"name": {"value": "miel"}}, {"name": {"value": "aceitunas"}}, {"name": {"value": "palmitos"}},
+            {"name": {"value": "sardinas"}}, {"name": {"value": "caballa"}}, {"name": {"value": "chorizos"}},
+            {"name": {"value": "morcilla"}}, {"name": {"value": "bondiola"}}, {"name": {"value": "matambre"}},
+            {"name": {"value": "costilla"}}, {"name": {"value": "asado"}}, {"name": {"value": "vacio"}},
+            {"name": {"value": "entraña"}}, {"name": {"value": "mollejas"}}, {"name": {"value": "chinchulín"}}
+          ]
+        }
+      ]
     },
     "dialog": {
       "intents": [
@@ -53,16 +99,28 @@
           "slots": [
             {
               "name": "product",
-              "type": "AMAZON.SearchQuery",
+              "type": "PRODUCT_NAME",
               "confirmationRequired": false,
-              "elicitationRequired": false,
-              "prompts": {}
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.product"
+              }
             }
           ]
         }
       ],
-      "delegationStrategy": "SKILL_RESPONSE"
+      "delegationStrategy": "ALWAYS"
     },
-    "prompts": []
+    "prompts": [
+      {
+        "id": "Elicit.Slot.product",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Que producto agrego?"
+          }
+        ]
+      }
+    ]
   }
 }
