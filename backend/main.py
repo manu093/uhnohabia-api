@@ -121,6 +121,94 @@ async def search_products(
             return []
 
 
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_policy():
+    return """
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Politica de Privacidad - Uh No Habia</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{color:#FF6B6B}h2{color:#4ECDC4;margin-top:24px}</style></head>
+    <body>
+    <h1>Politica de Privacidad</h1>
+    <p><strong>Uh No Habia</strong> - Ultima actualizacion: Abril 2026</p>
+
+    <h2>Que datos recopilamos</h2>
+    <p>Recopilamos la siguiente informacion para el funcionamiento de la app:</p>
+    <ul>
+    <li><strong>Cuenta:</strong> Email y nombre para autenticacion via Firebase Auth</li>
+    <li><strong>Listas de compras:</strong> Nombres de listas, productos agregados, cantidades y categorias</li>
+    <li><strong>Preferencias:</strong> Tema visual, medios de pago seleccionados, supermercados favoritos</li>
+    <li><strong>Voz (Alexa):</strong> Cuando usas la skill de Alexa, procesamos los comandos de voz para agregar productos a tus listas</li>
+    </ul>
+
+    <h2>Como usamos los datos</h2>
+    <ul>
+    <li>Para sincronizar tus listas entre dispositivos</li>
+    <li>Para compartir listas con otros usuarios que invites</li>
+    <li>Para optimizar precios consultando el catalogo publico de Precios Claros (SEPA)</li>
+    <li>Para procesar comandos de voz via Alexa</li>
+    </ul>
+
+    <h2>Almacenamiento</h2>
+    <p>Los datos se almacenan en:</p>
+    <ul>
+    <li>Firebase Firestore (Google Cloud) para sincronizacion</li>
+    <li>Base de datos local en tu dispositivo (Room/SQLite)</li>
+    <li>No vendemos ni compartimos datos con terceros</li>
+    </ul>
+
+    <h2>Alexa</h2>
+    <p>Cuando usas la skill de Alexa "Mi Mercado":</p>
+    <ul>
+    <li>Amazon procesa tu voz y nos envia el texto reconocido</li>
+    <li>Solo recibimos el nombre del producto que queres agregar</li>
+    <li>Necesitas vincular tu cuenta para que los productos se agreguen a tu lista</li>
+    <li>No almacenamos grabaciones de voz</li>
+    </ul>
+
+    <h2>Tus derechos</h2>
+    <ul>
+    <li>Podes eliminar tu cuenta y todos tus datos en cualquier momento desde la app</li>
+    <li>Podes exportar tus listas como texto o CSV</li>
+    <li>Podes desvincular Alexa desde la app de Amazon Alexa</li>
+    </ul>
+
+    <h2>Contacto</h2>
+    <p>Para consultas sobre privacidad: uhnohabia@gmail.com</p>
+    </body></html>
+    """
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_of_use():
+    return """
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Terminos de Uso - Uh No Habia</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{color:#FF6B6B}h2{color:#4ECDC4;margin-top:24px}</style></head>
+    <body>
+    <h1>Terminos de Uso</h1>
+    <p><strong>Uh No Habia</strong> - Ultima actualizacion: Abril 2026</p>
+
+    <h2>Uso de la app</h2>
+    <p>Uh No Habia es una app gratuita para gestionar listas de compras compartidas y comparar precios de supermercados en Argentina.</p>
+
+    <h2>Precios</h2>
+    <p>Los precios mostrados provienen del catalogo publico de Precios Claros (SEPA) del gobierno argentino. No garantizamos la exactitud ni disponibilidad de los precios. Los precios pueden variar en el punto de venta.</p>
+
+    <h2>Cuenta</h2>
+    <p>Necesitas crear una cuenta con email para usar la app. Sos responsable de mantener la seguridad de tu cuenta.</p>
+
+    <h2>Listas compartidas</h2>
+    <p>Al compartir una lista, los otros usuarios pueden ver y modificar los productos. Podes dejar de compartir en cualquier momento.</p>
+
+    <h2>Limitaciones</h2>
+    <p>La app se proporciona "tal cual" sin garantias. No somos responsables por decisiones de compra basadas en la informacion de la app.</p>
+
+    <h2>Contacto</h2>
+    <p>uhnohabia@gmail.com</p>
+    </body></html>
+    """
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -377,6 +465,94 @@ async def search_products(
             return []
 
 
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_policy():
+    return """
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Politica de Privacidad - Uh No Habia</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{color:#FF6B6B}h2{color:#4ECDC4;margin-top:24px}</style></head>
+    <body>
+    <h1>Politica de Privacidad</h1>
+    <p><strong>Uh No Habia</strong> - Ultima actualizacion: Abril 2026</p>
+
+    <h2>Que datos recopilamos</h2>
+    <p>Recopilamos la siguiente informacion para el funcionamiento de la app:</p>
+    <ul>
+    <li><strong>Cuenta:</strong> Email y nombre para autenticacion via Firebase Auth</li>
+    <li><strong>Listas de compras:</strong> Nombres de listas, productos agregados, cantidades y categorias</li>
+    <li><strong>Preferencias:</strong> Tema visual, medios de pago seleccionados, supermercados favoritos</li>
+    <li><strong>Voz (Alexa):</strong> Cuando usas la skill de Alexa, procesamos los comandos de voz para agregar productos a tus listas</li>
+    </ul>
+
+    <h2>Como usamos los datos</h2>
+    <ul>
+    <li>Para sincronizar tus listas entre dispositivos</li>
+    <li>Para compartir listas con otros usuarios que invites</li>
+    <li>Para optimizar precios consultando el catalogo publico de Precios Claros (SEPA)</li>
+    <li>Para procesar comandos de voz via Alexa</li>
+    </ul>
+
+    <h2>Almacenamiento</h2>
+    <p>Los datos se almacenan en:</p>
+    <ul>
+    <li>Firebase Firestore (Google Cloud) para sincronizacion</li>
+    <li>Base de datos local en tu dispositivo (Room/SQLite)</li>
+    <li>No vendemos ni compartimos datos con terceros</li>
+    </ul>
+
+    <h2>Alexa</h2>
+    <p>Cuando usas la skill de Alexa "Mi Mercado":</p>
+    <ul>
+    <li>Amazon procesa tu voz y nos envia el texto reconocido</li>
+    <li>Solo recibimos el nombre del producto que queres agregar</li>
+    <li>Necesitas vincular tu cuenta para que los productos se agreguen a tu lista</li>
+    <li>No almacenamos grabaciones de voz</li>
+    </ul>
+
+    <h2>Tus derechos</h2>
+    <ul>
+    <li>Podes eliminar tu cuenta y todos tus datos en cualquier momento desde la app</li>
+    <li>Podes exportar tus listas como texto o CSV</li>
+    <li>Podes desvincular Alexa desde la app de Amazon Alexa</li>
+    </ul>
+
+    <h2>Contacto</h2>
+    <p>Para consultas sobre privacidad: uhnohabia@gmail.com</p>
+    </body></html>
+    """
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_of_use():
+    return """
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Terminos de Uso - Uh No Habia</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{color:#FF6B6B}h2{color:#4ECDC4;margin-top:24px}</style></head>
+    <body>
+    <h1>Terminos de Uso</h1>
+    <p><strong>Uh No Habia</strong> - Ultima actualizacion: Abril 2026</p>
+
+    <h2>Uso de la app</h2>
+    <p>Uh No Habia es una app gratuita para gestionar listas de compras compartidas y comparar precios de supermercados en Argentina.</p>
+
+    <h2>Precios</h2>
+    <p>Los precios mostrados provienen del catalogo publico de Precios Claros (SEPA) del gobierno argentino. No garantizamos la exactitud ni disponibilidad de los precios. Los precios pueden variar en el punto de venta.</p>
+
+    <h2>Cuenta</h2>
+    <p>Necesitas crear una cuenta con email para usar la app. Sos responsable de mantener la seguridad de tu cuenta.</p>
+
+    <h2>Listas compartidas</h2>
+    <p>Al compartir una lista, los otros usuarios pueden ver y modificar los productos. Podes dejar de compartir en cualquier momento.</p>
+
+    <h2>Limitaciones</h2>
+    <p>La app se proporciona "tal cual" sin garantias. No somos responsables por decisiones de compra basadas en la informacion de la app.</p>
+
+    <h2>Contacto</h2>
+    <p>uhnohabia@gmail.com</p>
+    </body></html>
+    """
 @app.get("/health")
 async def health():
     return {"status": "ok"}

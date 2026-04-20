@@ -40,8 +40,8 @@
       "allowsPurchases": false,
       "locales": {
         "es-AR": {
-          "privacyPolicyUrl": "https://shared-shopping-lists-dev.web.app/privacy",
-          "termsOfUseUrl": "https://shared-shopping-lists-dev.web.app/terms"
+          "privacyPolicyUrl": "https://colonial-albertine-pepin-5207cd9b.koyeb.app/privacy",
+          "termsOfUseUrl": "https://colonial-albertine-pepin-5207cd9b.koyeb.app/terms"
         }
       },
       "isExportCompliant": true,
