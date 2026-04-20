@@ -1771,7 +1771,7 @@ def catalog_optimizar(body: dict):
     tarjetas_sel = body.get("tarjetas_seleccionadas", {})
     dia = body.get("dia_semana", "")
     cadenas_filter = body.get("cadenas", [])
-    print(f"OPTIMIZE: cadenas_filter={cadenas_filter}, dia={dia}", flush=True)
+    import sys; sys.stdout.write(f"OPTIMIZE: cadenas_filter={cadenas_filter}, dia={dia}\\n"); sys.stdout.flush()
 
     cn = _pg(); cr = cn.cursor()
 
