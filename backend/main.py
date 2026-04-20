@@ -246,9 +246,14 @@ async def process_alexa_skill(body: dict):
         return alexa_response_with_attrs("Que producto agrego?", False, {"waitingForProduct": True})
 
     user_id = get_uid_from_alexa_request(body)
+    # Parse quantity, unit and brand from the product text
+    # e.g. "2 kilos de carne" -> qty=2, unit=kilo, product=carne
+    # e.g. "leche la serenisima" -> product=leche, brand=la serenisima
+    parsed = parse_product_text(product_name)
     cmd = VoiceCommand(
-        userId=user_id, productName=product_name,
-        listName=None, quantity=None, unit=None
+        userId=user_id, productName=parsed["name"],
+        listName=None, quantity=parsed.get("quantity"),
+        unit=parsed.get("unit")
     )
     result = await process_voice_command(cmd)
     return alexa_response_with_attrs("Listo, " + result["message"] + ". Algo mas?", False, {"waitingForProduct": True})ecios Claros y expone una API limpia para la app Android.
