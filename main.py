@@ -121,6 +121,94 @@ async def search_products(
             return []
 
 
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_policy():
+    return """
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Politica de Privacidad - Uh No Habia</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{color:#FF6B6B}h2{color:#4ECDC4;margin-top:24px}</style></head>
+    <body>
+    <h1>Politica de Privacidad</h1>
+    <p><strong>Uh No Habia</strong> - Ultima actualizacion: Abril 2026</p>
+
+    <h2>Que datos recopilamos</h2>
+    <p>Recopilamos la siguiente informacion para el funcionamiento de la app:</p>
+    <ul>
+    <li><strong>Cuenta:</strong> Email y nombre para autenticacion via Firebase Auth</li>
+    <li><strong>Listas de compras:</strong> Nombres de listas, productos agregados, cantidades y categorias</li>
+    <li><strong>Preferencias:</strong> Tema visual, medios de pago seleccionados, supermercados favoritos</li>
+    <li><strong>Voz (Alexa):</strong> Cuando usas la skill de Alexa, procesamos los comandos de voz para agregar productos a tus listas</li>
+    </ul>
+
+    <h2>Como usamos los datos</h2>
+    <ul>
+    <li>Para sincronizar tus listas entre dispositivos</li>
+    <li>Para compartir listas con otros usuarios que invites</li>
+    <li>Para optimizar precios consultando el catalogo publico de Precios Claros (SEPA)</li>
+    <li>Para procesar comandos de voz via Alexa</li>
+    </ul>
+
+    <h2>Almacenamiento</h2>
+    <p>Los datos se almacenan en:</p>
+    <ul>
+    <li>Firebase Firestore (Google Cloud) para sincronizacion</li>
+    <li>Base de datos local en tu dispositivo (Room/SQLite)</li>
+    <li>No vendemos ni compartimos datos con terceros</li>
+    </ul>
+
+    <h2>Alexa</h2>
+    <p>Cuando usas la skill de Alexa "Mi Mercado":</p>
+    <ul>
+    <li>Amazon procesa tu voz y nos envia el texto reconocido</li>
+    <li>Solo recibimos el nombre del producto que queres agregar</li>
+    <li>Necesitas vincular tu cuenta para que los productos se agreguen a tu lista</li>
+    <li>No almacenamos grabaciones de voz</li>
+    </ul>
+
+    <h2>Tus derechos</h2>
+    <ul>
+    <li>Podes eliminar tu cuenta y todos tus datos en cualquier momento desde la app</li>
+    <li>Podes exportar tus listas como texto o CSV</li>
+    <li>Podes desvincular Alexa desde la app de Amazon Alexa</li>
+    </ul>
+
+    <h2>Contacto</h2>
+    <p>Para consultas sobre privacidad: uhnohabia@gmail.com</p>
+    </body></html>
+    """
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_of_use():
+    return """
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Terminos de Uso - Uh No Habia</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{color:#FF6B6B}h2{color:#4ECDC4;margin-top:24px}</style></head>
+    <body>
+    <h1>Terminos de Uso</h1>
+    <p><strong>Uh No Habia</strong> - Ultima actualizacion: Abril 2026</p>
+
+    <h2>Uso de la app</h2>
+    <p>Uh No Habia es una app gratuita para gestionar listas de compras compartidas y comparar precios de supermercados en Argentina.</p>
+
+    <h2>Precios</h2>
+    <p>Los precios mostrados provienen del catalogo publico de Precios Claros (SEPA) del gobierno argentino. No garantizamos la exactitud ni disponibilidad de los precios. Los precios pueden variar en el punto de venta.</p>
+
+    <h2>Cuenta</h2>
+    <p>Necesitas crear una cuenta con email para usar la app. Sos responsable de mantener la seguridad de tu cuenta.</p>
+
+    <h2>Listas compartidas</h2>
+    <p>Al compartir una lista, los otros usuarios pueden ver y modificar los productos. Podes dejar de compartir en cualquier momento.</p>
+
+    <h2>Limitaciones</h2>
+    <p>La app se proporciona "tal cual" sin garantias. No somos responsables por decisiones de compra basadas en la informacion de la app.</p>
+
+    <h2>Contacto</h2>
+    <p>uhnohabia@gmail.com</p>
+    </body></html>
+    """
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -213,30 +301,414 @@ async def process_alexa_skill(body: dict):
     if not _firebase_initialized:
         return alexa_response("Servicio de voz no disponible.", True)
     req = body.get("request", {})
-    
-    # LaunchRequest: user said "abrí super"
+    intent_name = req.get("intent", {}).get("name", "")
+    session_attrs = body.get("session", {}).get("attributes", {}) or {}
+    waiting_for_product = session_attrs.get("waitingForProduct", False)
+
+    # LaunchRequest: user said "abrir mi mercado"
     if req.get("type") == "LaunchRequest":
-        return alexa_response("¿Qué producto querés agregar?", False)
-    
+        return alexa_response_with_attrs("Que producto agrego?", False, {"waitingForProduct": True})
+
+    if intent_name in ("AMAZON.StopIntent", "AMAZON.CancelIntent"):
+        return alexa_response("Listo.", True)
+
+    if intent_name == "AMAZON.HelpIntent":
+        return alexa_response("Podes decir el nombre de un producto. Por ejemplo: agrega leche.", False)
+
+    # FallbackIntent: user said something that didnt match any intent
+    # If we are waiting for a product, treat the raw input as product name
+    if intent_name == "AMAZON.FallbackIntent" and waiting_for_product:
+        # Try to get raw input from the request
+        raw_input = req.get("intent", {}).get("slots", {}).get("product", {}).get("value", "")
+        if not raw_input:
+            return alexa_response_with_attrs("No entendi. Decime el producto que queres agregar.", False, {"waitingForProduct": True})
+        product_name = raw_input
+    elif intent_name == "AMAZON.FallbackIntent":
+        return alexa_response_with_attrs("Que producto agrego?", False, {"waitingForProduct": True})
+    elif req.get("type") == "IntentRequest" and intent_name == "AddProductIntent":
+        slots = req.get("intent", {}).get("slots", {})
+        product_name = slots.get("product", {}).get("value", "")
+        if not product_name:
+            return alexa_response_with_attrs("No entendi. Decime el producto, por ejemplo: agrega leche.", False, {"waitingForProduct": True})
+    else:
+        return alexa_response_with_attrs("Que producto agrego?", False, {"waitingForProduct": True})
+
+    user_id = get_uid_from_alexa_request(body)
+    # Parse quantity, unit and brand from the product text
+    # e.g. "2 kilos de carne" -> qty=2, unit=kilo, product=carne
+    # e.g. "leche la serenisima" -> product=leche, brand=la serenisima
+    cmd = VoiceCommand(
+        userId=user_id, productName=product_name,
+        listName=None, quantity=None, unit=None
+        listName=None, quantity=parsed.get("quantity"),
+        unit=parsed.get("unit")
+    )
+    result = await process_voice_command(cmd)
+    return alexa_response_with_attrs("Listo, " + result["message"] + ". Algo mas?", False, {"waitingForProduct": True})ecios Claros y expone una API limpia para la app Android.
+"""
+
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional
+import httpx
+import math
+from datetime import datetime
+
+app = FastAPI(title="Precios API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+SEPA_BASE_URL = "https://d3e6htiiul5ek9.cloudfront.net/prod"
+SEPA_HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
+
+
+class SupermarketResponse(BaseModel):
+    id: str
+    chain_id: str
+    name: str
+    latitude: float
+    longitude: float
+    distance_km: float
+
+
+class PriceResponse(BaseModel):
+    product_id: str
+    supermarket_id: str
+    price: str
+    last_updated: str
+
+
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) ** 2 +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(dlon / 2) ** 2)
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+@app.get("/supermarkets", response_model=list[SupermarketResponse])
+async def get_supermarkets(
+    lat: float = Query(...), lng: float = Query(...),
+    radius_km: float = Query(30.0),
+):
+    async with httpx.AsyncClient(timeout=15.0, headers=SEPA_HEADERS) as client:
+        try:
+            r = await client.get(f"{SEPA_BASE_URL}/sucursales", params={"lat": lat, "lng": lng})
+            r.raise_for_status()
+            data = r.json()
+        except Exception:
+            return []
+
+    results = []
+    for s in data.get("sucursales", data if isinstance(data, list) else []):
+        s_lat, s_lng = float(s.get("lat", 0)), float(s.get("lng", 0))
+        dist = haversine_km(lat, lng, s_lat, s_lng)
+        if dist <= radius_km:
+            results.append(SupermarketResponse(
+                id=str(s.get("id", "")),
+                chain_id=str(s.get("comercioId", s.get("banderaId", ""))),
+                name=s.get("comercioRazonSocial", s.get("banderaDescripcion", "Desconocido")),
+                latitude=s_lat, longitude=s_lng, distance_km=round(dist, 2),
+            ))
+    results.sort(key=lambda x: x.distance_km)
+    return results
+
+
+@app.get("/prices", response_model=list[PriceResponse])
+async def get_prices(
+    product_ids: str = Query(...), supermarket_ids: str = Query(...),
+):
+    products = [p.strip() for p in product_ids.split(",") if p.strip()]
+    supermarkets = [s.strip() for s in supermarket_ids.split(",") if s.strip()]
+    results = []
+    now = datetime.utcnow().isoformat() + "Z"
+
+    async with httpx.AsyncClient(timeout=15.0, headers=SEPA_HEADERS) as client:
+        for pid in products:
+            try:
+                r = await client.get(f"{SEPA_BASE_URL}/producto",
+                    params={"id_producto": pid, "array_sucursales": ",".join(supermarkets)})
+                r.raise_for_status()
+                data = r.json()
+                for p in data.get("precios", data if isinstance(data, list) else []):
+                    results.append(PriceResponse(
+                        product_id=pid,
+                        supermarket_id=str(p.get("sucursal_id", "")),
+                        price=str(p.get("precio", "0")),
+                        last_updated=p.get("fecha", now),
+                    ))
+            except Exception:
+                continue
+    return results
+
+
+@app.get("/search")
+async def search_products(
+    q: str = Query(...),
+    lat: Optional[float] = Query(None), lng: Optional[float] = Query(None),
+):
+    async with httpx.AsyncClient(timeout=15.0, headers=SEPA_HEADERS) as client:
+        try:
+            r = await client.get(f"{SEPA_BASE_URL}/productos",
+                params={"string": q, "lat": lat or -34.6, "lng": lng or -58.4})
+            r.raise_for_status()
+            return r.json()
+        except Exception:
+            return []
+
+
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_policy():
+    return """
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Politica de Privacidad - Uh No Habia</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{color:#FF6B6B}h2{color:#4ECDC4;margin-top:24px}</style></head>
+    <body>
+    <h1>Politica de Privacidad</h1>
+    <p><strong>Uh No Habia</strong> - Ultima actualizacion: Abril 2026</p>
+
+    <h2>Que datos recopilamos</h2>
+    <p>Recopilamos la siguiente informacion para el funcionamiento de la app:</p>
+    <ul>
+    <li><strong>Cuenta:</strong> Email y nombre para autenticacion via Firebase Auth</li>
+    <li><strong>Listas de compras:</strong> Nombres de listas, productos agregados, cantidades y categorias</li>
+    <li><strong>Preferencias:</strong> Tema visual, medios de pago seleccionados, supermercados favoritos</li>
+    <li><strong>Voz (Alexa):</strong> Cuando usas la skill de Alexa, procesamos los comandos de voz para agregar productos a tus listas</li>
+    </ul>
+
+    <h2>Como usamos los datos</h2>
+    <ul>
+    <li>Para sincronizar tus listas entre dispositivos</li>
+    <li>Para compartir listas con otros usuarios que invites</li>
+    <li>Para optimizar precios consultando el catalogo publico de Precios Claros (SEPA)</li>
+    <li>Para procesar comandos de voz via Alexa</li>
+    </ul>
+
+    <h2>Almacenamiento</h2>
+    <p>Los datos se almacenan en:</p>
+    <ul>
+    <li>Firebase Firestore (Google Cloud) para sincronizacion</li>
+    <li>Base de datos local en tu dispositivo (Room/SQLite)</li>
+    <li>No vendemos ni compartimos datos con terceros</li>
+    </ul>
+
+    <h2>Alexa</h2>
+    <p>Cuando usas la skill de Alexa "Mi Mercado":</p>
+    <ul>
+    <li>Amazon procesa tu voz y nos envia el texto reconocido</li>
+    <li>Solo recibimos el nombre del producto que queres agregar</li>
+    <li>Necesitas vincular tu cuenta para que los productos se agreguen a tu lista</li>
+    <li>No almacenamos grabaciones de voz</li>
+    </ul>
+
+    <h2>Tus derechos</h2>
+    <ul>
+    <li>Podes eliminar tu cuenta y todos tus datos en cualquier momento desde la app</li>
+    <li>Podes exportar tus listas como texto o CSV</li>
+    <li>Podes desvincular Alexa desde la app de Amazon Alexa</li>
+    </ul>
+
+    <h2>Contacto</h2>
+    <p>Para consultas sobre privacidad: uhnohabia@gmail.com</p>
+    </body></html>
+    """
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_of_use():
+    return """
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Terminos de Uso - Uh No Habia</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{color:#FF6B6B}h2{color:#4ECDC4;margin-top:24px}</style></head>
+    <body>
+    <h1>Terminos de Uso</h1>
+    <p><strong>Uh No Habia</strong> - Ultima actualizacion: Abril 2026</p>
+
+    <h2>Uso de la app</h2>
+    <p>Uh No Habia es una app gratuita para gestionar listas de compras compartidas y comparar precios de supermercados en Argentina.</p>
+
+    <h2>Precios</h2>
+    <p>Los precios mostrados provienen del catalogo publico de Precios Claros (SEPA) del gobierno argentino. No garantizamos la exactitud ni disponibilidad de los precios. Los precios pueden variar en el punto de venta.</p>
+
+    <h2>Cuenta</h2>
+    <p>Necesitas crear una cuenta con email para usar la app. Sos responsable de mantener la seguridad de tu cuenta.</p>
+
+    <h2>Listas compartidas</h2>
+    <p>Al compartir una lista, los otros usuarios pueden ver y modificar los productos. Podes dejar de compartir en cualquier momento.</p>
+
+    <h2>Limitaciones</h2>
+    <p>La app se proporciona "tal cual" sin garantias. No somos responsables por decisiones de compra basadas en la informacion de la app.</p>
+
+    <h2>Contacto</h2>
+    <p>uhnohabia@gmail.com</p>
+    </body></html>
+    """
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+# ─── Voice Command Processing (replaces Firebase Cloud Functions) ─────────────
+
+import firebase_admin
+from firebase_admin import credentials, firestore, auth as firebase_auth
+import os, re, uuid
+
+# Initialize Firebase Admin SDK (optional - voice endpoints need it, price endpoints don't)
+_firebase_initialized = False
+db = None
+try:
+    if not firebase_admin._apps:
+        if os.path.exists("serviceAccountKey.json"):
+            cred = credentials.Certificate("serviceAccountKey.json")
+            firebase_admin.initialize_app(cred)
+        elif os.environ.get("FIREBASE_SERVICE_ACCOUNT"):
+            import json
+            sa_info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
+            cred = credentials.Certificate(sa_info)
+            firebase_admin.initialize_app(cred)
+        else:
+            firebase_admin.initialize_app()
+    db = firestore.client()
+    _firebase_initialized = True
+except Exception as e:
+    print(f"Firebase init skipped: {e}. Voice endpoints will not work.")
+
+PRODUCT_CATALOG = [
+    "leche entera", "leche descremada", "pan blanco", "pan integral",
+    "arroz blanco", "arroz integral", "queso cremoso", "queso rallado",
+    "yogur natural", "yogur frutilla", "manzana", "banana", "tomate",
+    "aceite de girasol", "aceite de oliva", "azúcar", "sal fina",
+    "harina", "fideos", "manteca", "huevos", "pollo", "carne picada",
+    "agua mineral", "gaseosa", "cerveza", "vino",
+]
+
+
+def find_matching_products(name: str) -> list[str]:
+    n = name.lower().strip()
+    exact = [p for p in PRODUCT_CATALOG if p == n]
+    if exact:
+        return exact
+    prefix = [p for p in PRODUCT_CATALOG if p.startswith(n)]
+    if prefix:
+        return prefix
+    return [p for p in PRODUCT_CATALOG if n in p]
+
+
+def parse_multiple_products(raw: str) -> list[str]:
+    return [s.strip() for s in re.split(r",|\by\b|\band\b", raw, flags=re.IGNORECASE) if s.strip()]
+
+
+class VoiceCommand(BaseModel):
+    userId: str
+    action: str = "ADD_PRODUCT"
+    productName: str
+    listName: Optional[str] = None
+    quantity: Optional[int] = None
+    unit: Optional[str] = None
+
+
+@app.post("/voice/google")
+async def process_google_assistant(body: dict):
+    if not _firebase_initialized:
+        return {"fulfillmentText": "Servicio de voz no disponible."}
+    params = body.get("queryResult", {}).get("parameters", {})
+    user_id = (body.get("originalDetectIntentRequest", {}).get("payload", {}).get("user", {}).get("userId")
+               or body.get("session", ""))
+    product_name = params.get("product", "")
+    if not product_name:
+        return {"fulfillmentText": "No se pudo interpretar el comando de voz."}
+
+    cmd = VoiceCommand(
+        userId=str(user_id), productName=product_name,
+        listName=params.get("list"), quantity=params.get("quantity"),
+        unit=params.get("unit")
+    )
+    result = await process_voice_command(cmd)
+    if result["type"] == "disambiguation":
+        return {"fulfillmentText": f"¿Cuál producto querés agregar? {', '.join(result['suggestions'])}"}
+    return {"fulfillmentText": result["message"]}
+
+
+@app.post("/voice/alexa")
+async def process_alexa_skill(body: dict):
+    if not _firebase_initialized:
+        return alexa_response("Servicio de voz no disponible.", True)
+    req = body.get("request", {})
+    intent_name = req.get("intent", {}).get("name", "")
+
+    # LaunchRequest: user said "abrir mi lista" without product
+    if req.get("type") == "LaunchRequest":
+        return alexa_response("Decime que producto agregar.", False)
+
+    # Handle stop/cancel
+    if intent_name in ("AMAZON.StopIntent", "AMAZON.CancelIntent"):
+        return alexa_response("Listo.", True)
+
+    # Handle help
+    if intent_name == "AMAZON.HelpIntent":
+        return alexa_response("Podes decir el nombre de un producto para agregarlo. Por ejemplo: leche, pan, azucar.", False)
+
     if req.get("type") != "IntentRequest":
-        return alexa_response("¿Qué producto querés agregar?", False)
+        return alexa_response("Decime que producto agregar.", False)
 
     slots = req.get("intent", {}).get("slots", {})
     user_id = get_uid_from_alexa_request(body)
     product_name = slots.get("product", {}).get("value", "")
-    if not product_name:
-        return alexa_response("No entendí. ¿Qué producto querés agregar?", False)
 
+    if not product_name:
+        return alexa_response("No entendi. Decime el producto, por ejemplo: leche.", False)
+
+    parsed = parse_product_text(product_name)
     cmd = VoiceCommand(
-        userId=user_id, productName=product_name,
-        listName=slots.get("list", {}).get("value"),
-        quantity=slots.get("quantity", {}).get("value"),
-        unit=slots.get("unit", {}).get("value")
+        userId=user_id, productName=parsed["name"],
+        listName=None, quantity=parsed.get("quantity"),
+        unit=parsed.get("unit")
     )
     result = await process_voice_command(cmd)
-    # After adding, ask if they want to add more
-    return alexa_response(result["message"] + " ¿Querés agregar algo más?", False)
+    return alexa_response("Listo, " + result["message"], False)
 
+
+
+def parse_product_text(text):
+    import re
+    result = {"name": text.strip(), "quantity": None, "unit": None}
+    t = text.strip().lower()
+    # Handle "kilos de papa" (unit without number = assume 1)
+    m0 = re.match(r"^(kilos?|kg|gramos?|gr|g|litros?|lt|l|unidades?|docenas?|paquetes?|botellas?|latas?|cajas?)\s+(?:de\s+)?(.+)", t, re.IGNORECASE)
+    if m0:
+        result["quantity"] = "1"
+        result["unit"] = m0.group(1)
+        result["name"] = m0.group(2).strip()
+        return result
+    # Handle "2 kilos de papa"
+    nums = {"un": "1", "uno": "1", "una": "1", "dos": "2", "tres": "3", "cuatro": "4", "cinco": "5", "seis": "6", "siete": "7", "ocho": "8", "nueve": "9", "diez": "10", "media": "0.5", "medio": "0.5"}
+    for word, digit in nums.items():
+        if t.startswith(word + " "):
+            t = digit + t[len(word):]
+            break
+    m = re.match(r"^(\d+(?:\.\d+)?)\s*(kilos?|kg|gramos?|gr|g|litros?|lt|l|unidades?|docenas?|paquetes?|botellas?|latas?|cajas?)\s+(?:de\s+)?(.+)", t, re.IGNORECASE)
+    if m:
+        result["quantity"] = m.group(1)
+        result["unit"] = m.group(2)
+        result["name"] = m.group(3).strip()
+        return result
+    m2 = re.match(r"^(\d+)\s+(.+)", t)
+    if m2:
+        result["quantity"] = m2.group(1)
+        result["name"] = m2.group(2).strip()
+        return result
+    return result
 
 def alexa_response(text: str, end_session: bool) -> dict:
     return {"version": "1.0", "response": {"outputSpeech": {"type": "PlainText", "text": text}, "shouldEndSession": end_session}}
@@ -910,7 +1382,20 @@ def _init_catalog_db():
         "CREATE INDEX IF NOT EXISTS idx_pb_medio ON promos_bancarias(medio_pago_id)",
     ]:
         cur.execute(sql)
-    cur.execute("INSERT INTO zonas (nombre,lat,lng,radio_km) VALUES ('Zona Sur GBA',-34.83,-58.39,12.0) ON CONFLICT (nombre) DO NOTHING")
+    zonas = [
+        ("Zona Sur GBA", -34.83, -58.39, 12.0),
+        ("CABA Centro", -34.61, -58.38, 15.0),
+        ("GBA Norte", -34.47, -58.53, 12.0),
+        ("GBA Oeste", -34.67, -58.63, 12.0),
+        ("Cordoba Capital", -31.42, -64.18, 15.0),
+        ("Rosario", -32.95, -60.65, 12.0),
+        ("Mendoza Capital", -32.89, -68.83, 12.0),
+        ("Tucuman Capital", -26.82, -65.20, 12.0),
+        ("San Juan Capital", -31.54, -68.52, 12.0),
+        ("Mar del Plata", -38.00, -57.55, 12.0),
+    ]
+    for nombre, lat, lng, radio in zonas:
+        cur.execute("INSERT INTO zonas (nombre,lat,lng,radio_km) VALUES (%s,%s,%s,%s) ON CONFLICT (nombre) DO NOTHING", (nombre, lat, lng, radio))
     conn.commit(); cur.close(); conn.close()
     _seed_promos()
     _seed_medios_pago()
@@ -1285,12 +1770,17 @@ def catalog_optimizar(body: dict):
     medios_ids = body.get("medios_pago_ids", [])
     tarjetas_sel = body.get("tarjetas_seleccionadas", {})
     dia = body.get("dia_semana", "")
+    cadenas_filter = body.get("cadenas", [])
+    # Debug: will filter final results too
+    # Debug: will add cadenas_debug to response
 
     cn = _pg(); cr = cn.cursor()
 
-    # Get all chains
+    # Get all chains (filtered if user selected specific ones)
     cr.execute("SELECT DISTINCT cadena FROM vtex_productos")
     cadenas = [r[0] for r in cr.fetchall()]
+    if cadenas_filter:
+        cadenas = [c for c in cadenas if c in cadenas_filter]
 
     # Get applicable promos
     promo_sql = "SELECT cadena,banco,tarjeta,descuento_pct,dia_semana,tope_reintegro,medio_pago_id FROM promos_bancarias WHERE 1=1"
@@ -1494,9 +1984,13 @@ def catalog_optimizar(body: dict):
     cr.close(); cn.close()
 
     ranking.sort(key=lambda x: x["totalFinal"])
+    # Filter ranking by selected chains
+    if cadenas_filter:
+        ranking = [r for r in ranking if r["cadena"] in cadenas_filter]
     best = ranking[0] if ranking else None
 
     return {
+        "cadenas_debug": cadenas_filter,
         "cadenaRecomendada": best["cadena"] if best else None,
         "totalOriginal": best["totalOriginal"] if best else 0,
         "totalFinal": best["totalFinal"] if best else 0,
