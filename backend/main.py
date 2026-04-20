@@ -1770,12 +1770,15 @@ def catalog_optimizar(body: dict):
     medios_ids = body.get("medios_pago_ids", [])
     tarjetas_sel = body.get("tarjetas_seleccionadas", {})
     dia = body.get("dia_semana", "")
+    cadenas_filter = body.get("cadenas", [])
 
     cn = _pg(); cr = cn.cursor()
 
-    # Get all chains
+    # Get all chains (filtered if user selected specific ones)
     cr.execute("SELECT DISTINCT cadena FROM vtex_productos")
     cadenas = [r[0] for r in cr.fetchall()]
+    if cadenas_filter:
+        cadenas = [c for c in cadenas if c in cadenas_filter]
 
     # Get applicable promos
     promo_sql = "SELECT cadena,banco,tarjeta,descuento_pct,dia_semana,tope_reintegro,medio_pago_id FROM promos_bancarias WHERE 1=1"
