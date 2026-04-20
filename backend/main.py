@@ -1382,7 +1382,20 @@ def _init_catalog_db():
         "CREATE INDEX IF NOT EXISTS idx_pb_medio ON promos_bancarias(medio_pago_id)",
     ]:
         cur.execute(sql)
-    cur.execute("INSERT INTO zonas (nombre,lat,lng,radio_km) VALUES ('Zona Sur GBA',-34.83,-58.39,12.0) ON CONFLICT (nombre) DO NOTHING")
+    zonas = [
+        ("Zona Sur GBA", -34.83, -58.39, 12.0),
+        ("CABA Centro", -34.61, -58.38, 15.0),
+        ("GBA Norte", -34.47, -58.53, 12.0),
+        ("GBA Oeste", -34.67, -58.63, 12.0),
+        ("Cordoba Capital", -31.42, -64.18, 15.0),
+        ("Rosario", -32.95, -60.65, 12.0),
+        ("Mendoza Capital", -32.89, -68.83, 12.0),
+        ("Tucuman Capital", -26.82, -65.20, 12.0),
+        ("San Juan Capital", -31.54, -68.52, 12.0),
+        ("Mar del Plata", -38.00, -57.55, 12.0),
+    ]
+    for nombre, lat, lng, radio in zonas:
+        cur.execute("INSERT INTO zonas (nombre,lat,lng,radio_km) VALUES (%s,%s,%s,%s) ON CONFLICT (nombre) DO NOTHING", (nombre, lat, lng, radio))
     conn.commit(); cur.close(); conn.close()
     _seed_promos()
     _seed_medios_pago()
