@@ -493,11 +493,11 @@ async def process_alexa_skill(body: dict):
     if not product_name:
         return alexa_response("No entendi. Decime el producto, por ejemplo: leche.", False)
 
+    parsed = parse_product_text(product_name)
     cmd = VoiceCommand(
-        userId=user_id, productName=product_name,
-        listName=slots.get("list", {}).get("value"),
-        quantity=slots.get("quantity", {}).get("value"),
-        unit=slots.get("unit", {}).get("value")
+        userId=user_id, productName=parsed["name"],
+        listName=None, quantity=parsed.get("quantity"),
+        unit=parsed.get("unit")
     )
     result = await process_voice_command(cmd)
     return alexa_response("Listo, " + result["message"], False)
