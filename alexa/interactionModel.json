@@ -9,9 +9,6 @@
             {
               "name": "product",
               "type": "AMAZON.SearchQuery",
-              "samples": [
-                "{product}"
-              ]
             }
           ],
           "samples": [
