@@ -503,6 +503,29 @@ async def process_alexa_skill(body: dict):
     return alexa_response("Listo, " + result["message"], False)
 
 
+
+def parse_product_text(text):
+    import re
+    result = {"name": text.strip(), "quantity": None, "unit": None}
+    t = text.strip().lower()
+    nums = {"un": "1", "uno": "1", "una": "1", "dos": "2", "tres": "3", "cuatro": "4", "cinco": "5",
+            "seis": "6", "siete": "7", "ocho": "8", "nueve": "9", "diez": "10", "media": "0.5", "medio": "0.5"}
+    for word, digit in nums.items():
+        if t.startswith(word + " "):
+            t = digit + t[len(word):]
+            break
+    m = re.match(r'^(\d+(?:\.\d+)?)\s*(kilos?|kg|gramos?|gr|g|litros?|lt|l|unidades?|docenas?|paquetes?|botellas?|latas?|cajas?)\s+(?:de\s+)?(.+)', t, re.IGNORECASE)
+    if m:
+        result["quantity"] = m.group(1)
+        result["unit"] = m.group(2)
+        result["name"] = m.group(3).strip()
+        return result
+    m2 = re.match(r'^(\d+)\s+(.+)', t)
+    if m2:
+        result["quantity"] = m2.group(1)
+        result["name"] = m2.group(2).strip()
+        return result
+    return result
 def alexa_response(text: str, end_session: bool) -> dict:
     return {"version": "1.0", "response": {"outputSpeech": {"type": "PlainText", "text": text}, "shouldEndSession": end_session}}
 
