@@ -1771,7 +1771,8 @@ def catalog_optimizar(body: dict):
     tarjetas_sel = body.get("tarjetas_seleccionadas", {})
     dia = body.get("dia_semana", "")
     cadenas_filter = body.get("cadenas", [])
-    import sys; sys.stdout.write(f"OPTIMIZE: cadenas_filter={cadenas_filter}, dia={dia}\\n"); sys.stdout.flush()
+    # Debug: will filter final results too
+    # Debug: will add cadenas_debug to response
 
     cn = _pg(); cr = cn.cursor()
 
@@ -1983,9 +1984,13 @@ def catalog_optimizar(body: dict):
     cr.close(); cn.close()
 
     ranking.sort(key=lambda x: x["totalFinal"])
+    # Filter ranking by selected chains
+    if cadenas_filter:
+        ranking = [r for r in ranking if r["cadena"] in cadenas_filter]
     best = ranking[0] if ranking else None
 
     return {
+        "cadenas_debug": cadenas_filter,
         "cadenaRecomendada": best["cadena"] if best else None,
         "totalOriginal": best["totalOriginal"] if best else 0,
         "totalFinal": best["totalFinal"] if best else 0,
