@@ -249,9 +249,9 @@ async def process_alexa_skill(body: dict):
     # Parse quantity, unit and brand from the product text
     # e.g. "2 kilos de carne" -> qty=2, unit=kilo, product=carne
     # e.g. "leche la serenisima" -> product=leche, brand=la serenisima
-    parsed = parse_product_text(product_name)
     cmd = VoiceCommand(
-        userId=user_id, productName=parsed["name"],
+        userId=user_id, productName=product_name,
+        listName=None, quantity=None, unit=None
         listName=None, quantity=parsed.get("quantity"),
         unit=parsed.get("unit")
     )
