@@ -1036,7 +1036,7 @@ def _scrape_changomas_sepa(vtex_total):
                 rows = []
                 for suc in pdata.get("sucursales", []):
                     cadena = suc.get("banderaDescripcion", "")
-                    if "changomas" not in cadena.lower() and "walmart" not in cadena.lower():
+                    if "changomas" not in cadena.lower() and "walmart" not in cadena.lower() and "coto" not in cadena.lower():
                         continue
                     pp = suc.get("preciosProducto", {})
                     precio = pp.get("precioLista")
