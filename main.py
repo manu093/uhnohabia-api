@@ -989,7 +989,7 @@ def _run_catalog_scraper():
             if rows:
                 cn = _pg(); cr = cn.cursor()
                 execute_values(cr, """
-                    INSERT INTO vtex_productos (id,nombre,marca,presentacion,nombre_lower,marca_lower,cadena,precio,precio_lista,imagen,updated_at)
+                    INSERT INTO vtex_productos (id,nombre,marca,presentacion,nombre_lower,marca_lower,cadena,precio,precio_lista,imagen)
                     VALUES %s ON CONFLICT (id) DO UPDATE SET
                     nombre=EXCLUDED.nombre,marca=EXCLUDED.marca,precio=EXCLUDED.precio,
                     precio_lista=EXCLUDED.precio_lista,imagen=EXCLUDED.imagen,
