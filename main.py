@@ -1006,10 +1006,53 @@ def _run_catalog_scraper():
     cr.execute("INSERT INTO scraper_runs (duration,products,prices) VALUES (%s,%s,%s)", (_time.time()-start, total, total))
     cn.commit(); cr.close(); cn.close()
 
-    # Also scrape Changomas via SEPA
+    # Also scrape chains via SEPA (those without VTEX)
+    for sepa_chain, sepa_kw in [('Coto',['coto']),('Vea',['vea']),('Makro',['makro']),('Diarco',['diarco']),('Maxiconsumo',['maxiconsumo'])]:
+        try:
+            _scrape_chain_sepa(sepa_chain, sepa_kw, total)
+        except Exception as e:
+            log.warning(f'Error scraping {sepa_chain} via SEPA: {e}')
     _scrape_changomas_sepa(total)
 
     log.info(f"=== VTEX scraper done: {total} products in {_time.time()-start:.0f}s ===")
+
+
+def _scrape_chain_sepa(chain_name, keywords, vtex_total):
+    """Scrape a chain via SEPA API."""
+    log.info(f'Scraping {chain_name} via SEPA...')
+    SEPA = 'https://d3e6htiiul5ek9.cloudfront.net/prod'
+    count = 0
+    search_terms = ['leche','arroz','fideos','aceite','harina','azucar','yerba','cafe','huevos','pollo','carne','cerveza','vino','gaseosa','agua','detergente','jabon','shampoo','papel']
+    for term in search_terms:
+        try:
+            r = _requests.get(f'{SEPA}/productos', params={'string':term,'lat':'-34.6','lng':'-58.4'}, timeout=10)
+            if r.status_code != 200: continue
+            for p in r.json().get('productos',[])[:20]:
+                pid = p.get('id','')
+                if not pid: continue
+                pr = _requests.get(f'{SEPA}/producto', params={'id_producto':pid,'lat':'-34.6','lng':'-58.4'}, timeout=10)
+                if pr.status_code != 200: continue
+                for suc in pr.json().get('sucursales',[]):
+                    cadena = suc.get('banderaDescripcion','')
+                    if not any(kw in cadena.lower() for kw in keywords): continue
+                    precio = suc.get('preciosProducto',{}).get('precioLista')
+                    if not precio: continue
+                    try: precio = float(precio)
+                    except: continue
+                    if precio < 100: continue
+                    doc_id = f'{chain_name}_{pid}'
+                    cn = _pg(); cr = cn.cursor()
+                    from psycopg2.extras import execute_values
+                    execute_values(cr, '''INSERT INTO vtex_productos (id,nombre,marca,presentacion,nombre_lower,marca_lower,cadena,precio,precio_lista,imagen)
+                        VALUES %s ON CONFLICT (id) DO UPDATE SET precio=EXCLUDED.precio,updated_at=NOW()''',
+                        [(doc_id, p.get('nombre',''), p.get('marca',''), p.get('presentacion',''),
+                          p.get('nombre','').lower(), p.get('marca','').lower(), chain_name, precio, precio, '')])
+                    cn.commit(); cr.close(); cn.close()
+                    count += 1
+                _time.sleep(0.3)
+        except Exception as e:
+            log.warning(f'{chain_name} SEPA error for {term}: {e}')
+    log.info(f'{chain_name} (SEPA): {count} products')
 
 def _scrape_changomas_sepa(vtex_total):
     """Scrape Changomas prices via SEPA API (they don't have VTEX)."""
