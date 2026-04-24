@@ -1032,7 +1032,7 @@ def _scrape_chain_sepa(chain_name, keywords, vtex_total):
             for p in r.json().get('productos',[])[:20]:
                 pid = p.get('id','')
                 if not pid: continue
-            pr = _requests.get(f'{SEPA}/producto', params={'id_producto':pid,'lat':'-34.6','lng':'-58.4'}, headers=_headers, timeout=10)
+                pr = _requests.get(f'{SEPA}/producto', params={'id_producto':pid,'lat':'-34.6','lng':'-58.4'}, headers=_headers, timeout=10)
                 if pr.status_code != 200: continue
                 for suc in pr.json().get('sucursales',[]):
                     cadena = suc.get('banderaDescripcion','')
