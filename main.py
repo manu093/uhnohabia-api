@@ -1019,7 +1019,8 @@ def _run_catalog_scraper():
 
 def _scrape_chain_sepa(chain_name, keywords, vtex_total):
     """Scrape a chain via SEPA API."""
-    log.info(f'Scraping {chain_name} via SEPA...')
+    log.info(f"Scraping {chain_name} via SEPA...")
+    import sys; sys.stderr.write(f"SEPA SCRAPER: Starting {chain_name} with keywords {keywords}\n"); sys.stderr.flush()
     SEPA = 'https://d3e6htiiul5ek9.cloudfront.net/prod'
     _headers = {'User-Agent': 'Mozilla/5.0 UhNoHabia/1.0'}
     count = 0
