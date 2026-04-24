@@ -1021,16 +1021,17 @@ def _scrape_chain_sepa(chain_name, keywords, vtex_total):
     """Scrape a chain via SEPA API."""
     log.info(f'Scraping {chain_name} via SEPA...')
     SEPA = 'https://d3e6htiiul5ek9.cloudfront.net/prod'
+    _headers = {'User-Agent': 'Mozilla/5.0 UhNoHabia/1.0'}
     count = 0
     search_terms = ['leche','arroz','fideos','aceite','harina','azucar','yerba','cafe','huevos','pollo','carne','cerveza','vino','gaseosa','agua','detergente','jabon','shampoo','papel']
     for term in search_terms:
         try:
-            r = _requests.get(f'{SEPA}/productos', params={'string':term,'lat':'-34.6','lng':'-58.4'}, timeout=10)
+            r = _requests.get(f'{SEPA}/productos', params={'string':term,'lat':'-34.6','lng':'-58.4'}, headers=_headers, timeout=10)
             if r.status_code != 200: continue
             for p in r.json().get('productos',[])[:20]:
                 pid = p.get('id','')
                 if not pid: continue
-                pr = _requests.get(f'{SEPA}/producto', params={'id_producto':pid,'lat':'-34.6','lng':'-58.4'}, timeout=10)
+            pr = _requests.get(f'{SEPA}/producto', params={'id_producto':pid,'lat':'-34.6','lng':'-58.4'}, headers=_headers, timeout=10)
                 if pr.status_code != 200: continue
                 for suc in pr.json().get('sucursales',[]):
                     cadena = suc.get('banderaDescripcion','')
