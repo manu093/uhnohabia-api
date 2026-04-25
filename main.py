@@ -942,6 +942,9 @@ def _vtex_search(base_url, query, _from=0, _to=49):
             return r.json() if isinstance(r.json(), list) else []
     except: pass
     return []
+import logging
+log = logging.getLogger(__name__)
+
 
 def _run_catalog_scraper():
     if not _DB_URL: return
