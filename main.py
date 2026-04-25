@@ -945,7 +945,6 @@ def _vtex_search(base_url, query, _from=0, _to=49):
 
 def _run_catalog_scraper():
     if not _DB_URL: return
-    import logging; log = logging.getLogger("scraper")
     log.info("=== VTEX Catalog scraper start ===")
     start = _time.time()
     total = 0
@@ -1019,9 +1018,7 @@ def _run_catalog_scraper():
 
 def _scrape_chain_sepa(chain_name, keywords, vtex_total):
     """Scrape a chain via SEPA API."""
-    import logging; log = logging.getLogger("scraper")
     log.info(f"Scraping {chain_name} via SEPA...")
-    import sys; sys.stderr.write(f"SEPA SCRAPER: Starting {chain_name} with keywords {keywords}\n"); sys.stderr.flush()
     SEPA = 'https://d3e6htiiul5ek9.cloudfront.net/prod'
     _headers = {'User-Agent': 'Mozilla/5.0 UhNoHabia/1.0'}
     count = 0
@@ -1059,7 +1056,6 @@ def _scrape_chain_sepa(chain_name, keywords, vtex_total):
 
 def _scrape_changomas_sepa(vtex_total):
     """Scrape Changomas prices via SEPA API (they don't have VTEX)."""
-    import logging; log = logging.getLogger("scraper")
     log.info("Scraping Changomas via SEPA...")
     count = 0
     for term in _SCRAPE_TERMS:
