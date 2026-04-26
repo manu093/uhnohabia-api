@@ -121,6 +121,28 @@ async def search_products(
             return []
 
 
+
+@app.post("/catalog/import_products")
+def catalog_import_products(body: dict):
+    """Import products from external scraper (Raspberry Pi)."""
+    if not _DB_URL: return {"error": "DB not configured"}
+    products = body.get("products", [])
+    if not products: return {"imported": 0}
+    cn = _pg(); cr = cn.cursor()
+    count = 0
+    for p in products:
+        try:
+            from psycopg2.extras import execute_values
+            execute_values(cr, """INSERT INTO vtex_productos (id,nombre,marca,presentacion,nombre_lower,marca_lower,cadena,precio,precio_lista,imagen)
+                VALUES %s ON CONFLICT (id) DO UPDATE SET precio=EXCLUDED.precio,cadena=EXCLUDED.cadena,nombre=EXCLUDED.nombre,marca=EXCLUDED.marca,updated_at=NOW()""",
+                [(p["id"], p["nombre"], p["marca"], p.get("presentacion",""), p["nombre"].lower(), p["marca"].lower(), p["cadena"], p["precio"], p["precio"], "")])
+            count += 1
+        except Exception as e:
+            cn.rollback()
+            continue
+    cn.commit(); cr.close(); cn.close()
+    return {"imported": count}
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
