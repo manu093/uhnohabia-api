@@ -155,6 +155,24 @@ async def privacy_policy():
 @app.get("/terms", response_class=HTMLResponse)
 async def terms_of_use():
     return "<html><head><meta charset=utf-8><meta name=viewport content=width=device-width,initial-scale=1><title>Terminos - Uh No Habia</title><style>body{font-family:system-ui;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6}h1{color:#FF6B6B}h2{color:#4ECDC4}</style></head><body><h1>Terminos de Uso</h1><p><b>Uh No Habia</b> - Abril 2026</p><h2>Uso</h2><p>App gratuita para listas de compras compartidas y comparar precios en Argentina.</p><h2>Precios</h2><p>Los precios provienen de Precios Claros (SEPA). No garantizamos exactitud.</p><h2>Cuenta</h2><p>Necesitas email para usar la app.</p><h2>Listas compartidas</h2><p>Al compartir, otros pueden ver y modificar productos.</p><h2>Contacto</h2><p>uhnohabia@gmail.com</p></body></html>"
+
+@app.get("/app/version")
+async def app_version():
+    """Returns current app version info for OTA updates."""
+    return {
+        "versionCode": 2,
+        "versionName": "1.2.0",
+        "apkUrl": "https://colonial-albertine-pepin-5207cd9b.koyeb.app/app/download",
+        "releaseNotes": "Mejoras de UI, filtro de cadenas, modo super, busqueda global",
+        "forceUpdate": False
+    }
+
+@app.get("/app/download")
+async def app_download():
+    """Redirect to APK download URL."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse("https://drive.google.com/uc?export=download&id=PLACEHOLDER_FILE_ID")
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
