@@ -162,7 +162,7 @@ async def app_version():
     return {
         "versionCode": 2,
         "versionName": "1.2.0",
-        "apkUrl": "https://colonial-albertine-pepin-5207cd9b.koyeb.app/app/download",
+        "apkUrl": "https://github.com/manu093/uhnohabia-api/releases/download/v1.2.0/UhNoHabia.apk",
         "releaseNotes": "Mejoras de UI, filtro de cadenas, modo super, busqueda global",
         "forceUpdate": False
     }
@@ -171,7 +171,7 @@ async def app_version():
 async def app_download():
     """Redirect to APK download URL."""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse("https://drive.google.com/uc?export=download&id=PLACEHOLDER_FILE_ID")
+    return RedirectResponse("https://github.com/manu093/uhnohabia-api/releases/download/v1.2.0/UhNoHabia.apk")
 
 @app.get("/health")
 async def health():
