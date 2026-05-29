@@ -98,7 +98,10 @@ fun ShoppingListDetailScreen(
     // Preload product images when products change
     LaunchedEffect(products) {
         if (products.isNotEmpty()) {
-            preloadProductImages(context, products.map { it.name })
+            val searchNames = products.map { p ->
+                if (p.preferredBrand.isNotBlank()) "${p.name} ${p.preferredBrand}" else p.name
+            }
+            preloadProductImages(context, searchNames)
         }
     }
 

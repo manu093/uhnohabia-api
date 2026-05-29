@@ -256,7 +256,7 @@ private fun ModernProductItem(product: Product, onToggle: () -> Unit, onEdit: ()
         Spacer(Modifier.width(12.dp))
 
         // Product image/emoji
-        ProductImage(productName = product.name, emoji = emoji, size = 40.dp)
+        ProductImage(productName = if (product.preferredBrand.isNotBlank()) "${product.name} ${product.preferredBrand}" else product.name, emoji = emoji, size = 40.dp)
 
         Spacer(Modifier.width(12.dp))
 
