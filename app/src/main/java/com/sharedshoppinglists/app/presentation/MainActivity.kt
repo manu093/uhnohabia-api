@@ -79,7 +79,7 @@ fun UhNoHabiaTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val selectedTheme = remember {
         context.getSharedPreferences("app_theme", android.content.Context.MODE_PRIVATE)
-            .getString("theme", "dynamic") ?: "dynamic"
+            .getString("theme", "orange") ?: "orange"
     }
     val darkMode = remember {
         context.getSharedPreferences("app_theme", android.content.Context.MODE_PRIVATE)

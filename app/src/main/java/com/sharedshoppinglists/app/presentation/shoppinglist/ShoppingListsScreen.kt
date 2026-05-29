@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,7 +31,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,7 +49,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,10 +62,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,42 +103,6 @@ fun ShoppingListsScreen(
     var fabExpanded by rememberSaveable { mutableStateOf(false) }
     var showDuplicateDialog by rememberSaveable { mutableStateOf(false) }
     var listToEditEmoji by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
-    var dbStatus by rememberSaveable { mutableStateOf("") }
-
-    val greeting = remember {
-        val hour = java.time.LocalTime.now().hour
-        when {
-            hour < 12 -> "Buenos dias \u2600\uFE0F"
-            hour < 19 -> "Buenas tardes \uD83C\uDF24\uFE0F"
-            else -> "Buenas noches \uD83C\uDF19"
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val url = java.net.URL("https://colonial-albertine-pepin-5207cd9b.koyeb.app/catalog/status")
-                val conn = url.openConnection() as java.net.HttpURLConnection
-                conn.connectTimeout = 5000; conn.readTimeout = 5000
-                val json = conn.inputStream.bufferedReader().readText()
-                conn.disconnect()
-                val totalMatch = Regex("\"totalProducts\":(\\d+)").find(json)
-                val lastRunMatch = Regex("\"lastRun\":\"([^\"]+)\"").find(json)
-                val total = totalMatch?.groupValues?.get(1) ?: "?"
-                val lastRunRaw = lastRunMatch?.groupValues?.get(1) ?: ""
-                val lastRun = if (lastRunRaw.isNotBlank()) {
-                    try {
-                        val utcFormat = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss[.SSSSSS]")
-                        val utcTime = java.time.LocalDateTime.parse(lastRunRaw.take(26), utcFormat)
-                        val arTime = utcTime.atZone(java.time.ZoneId.of("UTC"))
-                            .withZoneSameInstant(java.time.ZoneId.of("America/Argentina/Buenos_Aires"))
-                        arTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm"))
-                    } catch (_: Exception) { lastRunRaw.take(16) }
-                } else "?"
-                dbStatus = "$total productos \u00B7 $lastRun"
-            } catch (_: Exception) { }
-        }
-    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -153,7 +112,6 @@ fun ShoppingListsScreen(
                 AnimatedVisibility(visible = fabExpanded, enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom), exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom)) {
                     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         FabOption("\uD83D\uDCCB Nueva lista") { fabExpanded = false; showCreateDialog = true }
-                        FabOption("\uD83D\uDCC2 Nueva categoria") { fabExpanded = false; onCategoryManagementClick() }
                         FabOption("\u2B50 Producto recurrente") { fabExpanded = false; onKnownProductsClick() }
                         FabOption("\uD83D\uDCC4 Duplicar lista") { fabExpanded = false; showDuplicateDialog = true }
                     }
@@ -181,58 +139,35 @@ fun ShoppingListsScreen(
         ) {
             // Header
             item {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp, top = 52.dp, bottom = 8.dp)
-                ) {
+                Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp, top = 56.dp, bottom = 16.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(greeting, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Listas de compras", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                         Row {
+                            IconButton(onClick = onGlobalSearchClick) {
+                                Text("\uD83D\uDD0D", fontSize = 20.sp)
+                            }
                             IconButton(onClick = onPaymentMethodsClick) { Icon(Icons.Default.Settings, "Config", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                             Box {
                                 IconButton(onClick = { showMenu = !showMenu }) { Icon(Icons.Default.MoreVert, "Mas", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                     DropdownMenuItem(text = { Text("Categorias") }, onClick = { showMenu = false; onCategoryManagementClick() })
                                     DropdownMenuItem(text = { Text("Mis Productos") }, onClick = { showMenu = false; onKnownProductsClick() })
+                                    DropdownMenuItem(text = { Text("Precios") }, onClick = { showMenu = false; onPriceCatalogClick() })
                                     HorizontalDivider()
                                     DropdownMenuItem(text = { Text("Cerrar Sesion") }, onClick = { showMenu = false; onLogout() })
                                 }
                             }
                         }
                     }
-                    Spacer(Modifier.height(4.dp))
-                    Text("Mis Listas", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    if (dbStatus.isNotBlank()) {
-                        Spacer(Modifier.height(6.dp))
-                        Text("\uD83D\uDCC8 $dbStatus", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
-                    }
-                }
-            }
-
-            // Quick Actions - pill chips
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    QuickActionChip("\uD83D\uDD0D Buscar", Modifier.weight(1f)) { onGlobalSearchClick() }
-                    QuickActionChip("\uD83D\uDCB0 Precios", Modifier.weight(1f)) { onPriceCatalogClick() }
-                    QuickActionChip("\uD83C\uDFF7\uFE0F Categorias", Modifier.weight(1f)) { onCategoryManagementClick() }
                 }
             }
 
             // Notifications
             if (notifications.isNotEmpty()) {
                 item {
-                    Card(
-                        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            notifications.forEach { msg ->
-                                Text(msg, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF5D4037))
-                                Spacer(Modifier.height(4.dp))
-                            }
+                    Surface(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), shape = RoundedCornerShape(14.dp), color = Color(0xFFFFF3E0)) {
+                        Column(Modifier.padding(14.dp)) {
+                            notifications.forEach { msg -> Text(msg, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF5D4037)) }
                             TextButton(onClick = { viewModel.dismissNotifications() }) { Text("Entendido") }
                         }
                     }
@@ -247,19 +182,17 @@ fun ShoppingListsScreen(
             // Empty state
             if (lists.isEmpty() && pendingInvitations.isEmpty()) {
                 item {
-                    Box(Modifier.fillMaxWidth().padding(vertical = 80.dp), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("\uD83D\uDED2", fontSize = 64.sp)
-                            Spacer(Modifier.height(16.dp))
-                            Text("No tenes listas todavia", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(Modifier.height(4.dp))
-                            Text("Toca + para crear tu primera lista", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-                        }
+                    Column(Modifier.fillMaxWidth().padding(vertical = 80.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("\uD83D\uDED2", fontSize = 64.sp)
+                        Spacer(Modifier.height(16.dp))
+                        Text("No tenes listas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(4.dp))
+                        Text("Toca + para crear tu primera lista", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
                 items(lists, key = { it.id }) { list ->
-                    ModernListCard(list = list, onClick = { onListClick(list.id) }, onDelete = { listToDelete = list }, onRename = { listToRename = list }, onEditEmoji = { listToEditEmoji = list })
+                    ListCard(list = list, onClick = { onListClick(list.id) }, onDelete = { listToDelete = list }, onRename = { listToRename = list }, onEditEmoji = { listToEditEmoji = list })
                 }
             }
         }
@@ -277,54 +210,35 @@ fun ShoppingListsScreen(
         DuplicateListDialog(lists = lists, onDismiss = { showDuplicateDialog = false }, onConfirm = { listId, newName -> viewModel.duplicateList(listId, newName); showDuplicateDialog = false })
     }
     listToEditEmoji?.let { list ->
-        EditEmojiDialog(currentEmoji = list.emoji, onDismiss = { listToEditEmoji = null },
-            onConfirm = { emoji -> viewModel.updateListEmoji(list.id, emoji); listToEditEmoji = null })
+        EditEmojiDialog(currentEmoji = list.emoji, onDismiss = { listToEditEmoji = null }, onConfirm = { emoji -> viewModel.updateListEmoji(list.id, emoji); listToEditEmoji = null })
     }
     listToRename?.let { list ->
         RenameListDialog(currentName = list.name, onDismiss = { listToRename = null }, onConfirm = { newName -> viewModel.renameList(list.id, newName); listToRename = null })
     }
 }
 
-@Composable
-private fun QuickActionChip(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(40.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        tonalElevation = 0.dp
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ModernListCard(list: ShoppingList, onClick: () -> Unit, onDelete: () -> Unit, onRename: () -> Unit, onEditEmoji: () -> Unit = {}) {
+private fun ListCard(list: ShoppingList, onClick: () -> Unit, onDelete: () -> Unit, onRename: () -> Unit, onEditEmoji: () -> Unit = {}) {
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(ZoneId.systemDefault())
     val listEmoji = list.emoji.ifBlank { "\uD83D\uDED2" }
     val timeSinceUpdate = Duration.between(list.updatedAt, Instant.now())
     val isRecent = timeSinceUpdate.toHours() < 2
 
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp).combinedClickable(onClick = onClick, onLongClick = onRename),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp).combinedClickable(onClick = onClick, onLongClick = onRename),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp
     ) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            // Emoji avatar
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Emoji
             Box(
-                Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).background(
-                    if (list.isShared) Color(0xFF4ECDC4).copy(alpha = 0.12f)
-                    else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                ),
+                Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
                 contentAlignment = Alignment.Center
-            ) { Text(listEmoji, fontSize = 28.sp) }
+            ) { Text(listEmoji, fontSize = 24.sp) }
 
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(12.dp))
 
             Column(Modifier.weight(1f)) {
                 val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -339,57 +253,40 @@ private fun ModernListCard(list: ShoppingList, onClick: () -> Unit, onDelete: ()
                     }
                 }
 
-                Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(4.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(list.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(2.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (productCount > 0) {
-                        Text("$pendingCount/$productCount", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$pendingCount de $productCount", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        Text("Vacia", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                     }
                     if (list.isShared) {
-                        Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF4ECDC4).copy(alpha = 0.15f)) {
-                            Text("\uD83D\uDC65 Compartida", style = MaterialTheme.typography.labelSmall, color = Color(0xFF2E9E96), modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
-                        }
-                    }
-                    if (isRecent) {
-                        Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)) {
-                            Text("\u23F0 Reciente", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
-                        }
+                        Text("\u00B7 Compartida", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                 }
-
-                Spacer(Modifier.height(2.dp))
-                Text(dateFormatter.format(list.updatedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
             }
 
-            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Delete, "Eliminar", tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
-            }
+            // Arrow
+            Text("\u203A", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
         }
     }
 }
 
 @Composable
 private fun PendingInvitationsBanner(invitations: List<PendingInvitation>, onAccept: (String) -> Unit, onDecline: (String) -> Unit) {
-    val label = if (invitations.size == 1) "Tenes 1 invitacion pendiente" else "Tenes ${invitations.size} invitaciones pendientes"
-    Card(
-        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-        elevation = CardDefaults.cardElevation(0.dp),
-        shape = RoundedCornerShape(20.dp)
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Text("\uD83D\uDCE9 $label", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF2E7D32))
-            Spacer(Modifier.height(12.dp))
+    Surface(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), shape = RoundedCornerShape(14.dp), color = Color(0xFFE8F5E9)) {
+        Column(Modifier.padding(14.dp)) {
+            Text("\uD83D\uDCE9 ${invitations.size} invitacion${if (invitations.size > 1) "es" else ""} pendiente${if (invitations.size > 1) "s" else ""}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF2E7D32))
+            Spacer(Modifier.height(10.dp))
             invitations.forEach { inv ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(inv.listName, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { onAccept(inv.id) }, Modifier.height(36.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))) { Text("Aceptar", style = MaterialTheme.typography.labelMedium) }
-                        OutlinedButton(onClick = { onDecline(inv.id) }, Modifier.height(36.dp), shape = RoundedCornerShape(12.dp)) { Text("Rechazar", style = MaterialTheme.typography.labelMedium) }
+                        Button(onClick = { onAccept(inv.id) }, Modifier.height(34.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))) { Text("Si", style = MaterialTheme.typography.labelMedium) }
+                        OutlinedButton(onClick = { onDecline(inv.id) }, Modifier.height(34.dp), shape = RoundedCornerShape(10.dp)) { Text("No", style = MaterialTheme.typography.labelMedium) }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
             }
         }
     }
@@ -397,15 +294,8 @@ private fun PendingInvitationsBanner(invitations: List<PendingInvitation>, onAcc
 
 @Composable
 private fun FabOption(label: String, onClick: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-            onClick = onClick,
-            shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 4.dp
-        ) {
-            Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
-        }
+    Surface(onClick = onClick, shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
+        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
     }
 }
 
@@ -425,10 +315,8 @@ private fun DuplicateListDialog(lists: List<ShoppingList>, onDismiss: () -> Unit
     AlertDialog(onDismissRequest = onDismiss, title = { Text("Duplicar lista") },
         text = {
             Column {
-                Text("Elegir lista a duplicar:", style = MaterialTheme.typography.labelMedium)
-                Spacer(Modifier.height(8.dp))
                 lists.forEach { list ->
-                    Row(Modifier.fillMaxWidth().clickable { selectedListId = list.id }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().clickable { selectedListId = list.id }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = selectedListId == list.id, onClick = { selectedListId = list.id })
                         Spacer(Modifier.width(8.dp))
                         Text(list.name)
@@ -449,16 +337,14 @@ private fun EditEmojiDialog(currentEmoji: String, onDismiss: () -> Unit, onConfi
     AlertDialog(onDismissRequest = onDismiss, title = { Text("Cambiar icono") },
         text = {
             androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-                columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(6),
-                modifier = Modifier.height(160.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(6), modifier = Modifier.height(160.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 items(emojis.size) { i ->
                     val e = emojis[i]
-                    Surface(onClick = { selected = e }, shape = RoundedCornerShape(12.dp),
+                    Surface(onClick = { selected = e }, shape = RoundedCornerShape(10.dp),
                         color = if (e == selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    ) { Box(Modifier.padding(10.dp), contentAlignment = Alignment.Center) { Text(e, fontSize = 24.sp) } }
+                    ) { Box(Modifier.padding(10.dp), contentAlignment = Alignment.Center) { Text(e, fontSize = 22.sp) } }
                 }
             }
         },
