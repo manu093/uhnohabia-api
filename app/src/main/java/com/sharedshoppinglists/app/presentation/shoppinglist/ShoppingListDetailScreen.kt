@@ -352,17 +352,19 @@ private fun SwipeToDismissProduct(
                     else -> Color.Transparent
                 }, label = "bg"
             )
-            val icon = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Check
-                SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
-                else -> Icons.Default.Check
-            }
-            val align = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                else -> Alignment.CenterEnd
-            }
-            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)).background(color).padding(horizontal = 20.dp), contentAlignment = align) {
-                Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface)
+            if (dismissState.currentValue != SwipeToDismissBoxValue.Settled || dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
+                val icon = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Check
+                    SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+                    else -> null
+                }
+                val align = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                    else -> Alignment.CenterEnd
+                }
+                Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)).background(color).padding(horizontal = 20.dp), contentAlignment = align) {
+                    icon?.let { Icon(it, null, tint = MaterialTheme.colorScheme.onSurface) }
+                }
             }
         },
         enableDismissFromStartToEnd = !product.isPurchased,
