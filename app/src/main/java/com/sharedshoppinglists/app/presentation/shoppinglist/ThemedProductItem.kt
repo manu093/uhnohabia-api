@@ -283,7 +283,7 @@ private fun ModernProductItem(product: Product, onToggle: () -> Unit, onEdit: ()
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
             Text(
-                "${product.quantity.toInt()}${product.unit.take(3).lowercase()}",
+                "${product.quantity.toInt()} ${product.unit.take(3).lowercase()}",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = dim),
                 fontWeight = FontWeight.Medium,

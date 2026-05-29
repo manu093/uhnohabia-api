@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import com.sharedshoppinglists.app.domain.model.CustomCategory
 import com.sharedshoppinglists.app.domain.model.Product
 import com.sharedshoppinglists.app.presentation.shared.EditingIndicatorBadge
@@ -86,6 +87,7 @@ fun ShoppingListDetailScreen(
     var showShareDialog by rememberSaveable { mutableStateOf(false) }
     var productToMove by rememberSaveable { mutableStateOf<Product?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
+    val refreshScope = rememberCoroutineScope()
     val context = LocalContext.current
 
     LaunchedEffect(listId) {
@@ -158,7 +160,10 @@ fun ShoppingListDetailScreen(
             onRefresh = {
                 isRefreshing = true
                 viewModel.selectList(listId)
-                isRefreshing = false
+                refreshScope.launch {
+                    kotlinx.coroutines.delay(1500)
+                    isRefreshing = false
+                }
             },
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
