@@ -139,29 +139,41 @@ fun ShoppingListsScreen(
         ) {
             // Header
             item {
-                Row(
-                    Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 48.dp, bottom = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("Mis Listas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        if (lists.isNotEmpty()) {
-                            Text("${lists.size} lista${if (lists.size > 1) "s" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 48.dp, bottom = 4.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                        Column {
+                            val greeting = remember {
+                                val hour = java.time.LocalTime.now().hour
+                                when {
+                                    hour < 12 -> "Buenos dias \u2600\uFE0F"
+                                    hour < 19 -> "Buenas tardes \uD83C\uDF24\uFE0F"
+                                    else -> "Buenas noches \uD83C\uDF19"
+                                }
+                            }
+                            Text(greeting, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(2.dp))
+                            Row {
+                                Text("Uh ", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = Color(0xFFFF6B6B))
+                                Text("No ", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = Color(0xFF4ECDC4))
+                                Text("Hab\u00eda", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = Color(0xFFFFE66D))
+                            }
+                            if (lists.isNotEmpty()) {
+                                Text("${lists.size} lista${if (lists.size > 1) "s" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
-                    }
-                    Row {
-                        IconButton(onClick = onGlobalSearchClick) { Text("\uD83D\uDD0D", fontSize = 18.sp) }
-                        IconButton(onClick = onPriceCatalogClick) { Text("\uD83D\uDCB0", fontSize = 18.sp) }
-                        IconButton(onClick = onPaymentMethodsClick) { Icon(Icons.Default.Settings, "Config", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp)) }
-                        Box {
-                            IconButton(onClick = { showMenu = !showMenu }) { Icon(Icons.Default.MoreVert, "Mas", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp)) }
-                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                                DropdownMenuItem(text = { Text("Categorias") }, onClick = { showMenu = false; onCategoryManagementClick() })
-                                DropdownMenuItem(text = { Text("Mis Productos") }, onClick = { showMenu = false; onKnownProductsClick() })
-                                DropdownMenuItem(text = { Text("Precios") }, onClick = { showMenu = false; onPriceCatalogClick() })
-                                HorizontalDivider()
-                                DropdownMenuItem(text = { Text("Cerrar Sesion") }, onClick = { showMenu = false; onLogout() })
+                        Row {
+                            IconButton(onClick = onGlobalSearchClick) { Text("\uD83D\uDD0D", fontSize = 18.sp) }
+                            IconButton(onClick = onPriceCatalogClick) { Text("\uD83D\uDCB0", fontSize = 18.sp) }
+                            IconButton(onClick = onPaymentMethodsClick) { Icon(Icons.Default.Settings, "Config", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp)) }
+                            Box {
+                                IconButton(onClick = { showMenu = !showMenu }) { Icon(Icons.Default.MoreVert, "Mas", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp)) }
+                                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                    DropdownMenuItem(text = { Text("Categorias") }, onClick = { showMenu = false; onCategoryManagementClick() })
+                                    DropdownMenuItem(text = { Text("Mis Productos") }, onClick = { showMenu = false; onKnownProductsClick() })
+                                    DropdownMenuItem(text = { Text("Precios") }, onClick = { showMenu = false; onPriceCatalogClick() })
+                                    HorizontalDivider()
+                                    DropdownMenuItem(text = { Text("Cerrar Sesion") }, onClick = { showMenu = false; onLogout() })
+                                }
                             }
                         }
                     }
@@ -238,9 +250,9 @@ private fun ListCard(list: ShoppingList, onClick: () -> Unit, onDelete: () -> Un
         tonalElevation = 1.dp
     ) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            // Emoji
+            // Emoji - tappable to change
             Box(
-                Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)).clickable { onEditEmoji() },
                 contentAlignment = Alignment.Center
             ) { Text(listEmoji, fontSize = 24.sp) }
 
