@@ -95,6 +95,13 @@ fun ShoppingListDetailScreen(
         if (isShared) sharedListViewModel.observeList(listId)
     }
 
+    // Preload product images when products change
+    LaunchedEffect(products) {
+        if (products.isNotEmpty()) {
+            preloadProductImages(context, products.map { it.name })
+        }
+    }
+
     // Progress
     val pending = products.filter { !it.isPurchased }
     val done = products.filter { it.isPurchased }

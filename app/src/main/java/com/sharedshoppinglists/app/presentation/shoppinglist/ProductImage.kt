@@ -1,8 +1,10 @@
 ﻿package com.sharedshoppinglists.app.presentation.shoppinglist
 
+import android.content.Context
 import android.util.LruCache
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -24,36 +26,84 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
 
 /**
- * Cache de URLs de imagenes de productos para no repetir requests.
+ * Memory cache de URLs de imagenes de productos.
  */
-private val imageCache = LruCache<String, String>(200)
+private val memoryCache = LruCache<String, String>(300)
 
 /**
- * Busca una imagen de producto en Open Food Facts por nombre.
- * Retorna URL de imagen o null.
+ * Obtiene URL de imagen del cache persistente (SharedPreferences).
  */
-suspend fun searchProductImage(productName: String): String? {
-    // Check cache first
-    imageCache.get(productName)?.let { return if (it == "NONE") null else it }
+private fun getDiskCache(context: Context, key: String): String? {
+    return context.getSharedPreferences("product_images", Context.MODE_PRIVATE)
+        .getString(key, null)
+}
 
+/**
+ * Guarda URL de imagen en cache persistente.
+ */
+private fun setDiskCache(context: Context, key: String, url: String) {
+    context.getSharedPreferences("product_images", Context.MODE_PRIVATE)
+        .edit().putString(key, url).apply()
+}
+
+/**
+ * Pre-carga imagenes para una lista de productos en paralelo.
+ * Llamar al entrar a la pantalla de detalle.
+ */
+suspend fun preloadProductImages(context: Context, productNames: List<String>) {
+    coroutineScope {
+        productNames.filter { name ->
+            // Solo buscar los que no estan en cache
+            memoryCache.get(name) == null && getDiskCache(context, name) == null
+        }.take(10).map { name -> // Limitar a 10 en paralelo
+            async(Dispatchers.IO) {
+                searchProductImageInternal(context, name)
+            }
+        }.awaitAll()
+    }
+}
+
+/**
+ * Busca imagen de producto. Usa memory cache > disk cache > network.
+ */
+suspend fun searchProductImage(context: Context, productName: String): String? {
+    // 1. Memory cache
+    memoryCache.get(productName)?.let { return if (it == "NONE") null else it }
+
+    // 2. Disk cache
+    getDiskCache(context, productName)?.let { cached ->
+        memoryCache.put(productName, cached)
+        return if (cached == "NONE") null else cached
+    }
+
+    // 3. Network
+    return searchProductImageInternal(context, productName)
+}
+
+private suspend fun searchProductImageInternal(context: Context, productName: String): String? {
     return withContext(Dispatchers.IO) {
         try {
-            // Clean product name for search - keep spanish chars
             val query = productName.lowercase().trim().take(30)
-            if (query.length < 3) { imageCache.put(productName, "NONE"); return@withContext null }
+            if (query.length < 3) {
+                memoryCache.put(productName, "NONE")
+                setDiskCache(context, productName, "NONE")
+                return@withContext null
+            }
 
-            // Try Open Food Facts with Spanish locale
             val encoded = java.net.URLEncoder.encode(query, "UTF-8")
             val url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms=$encoded&search_simple=1&action=process&json=1&page_size=3&fields=image_small_url,image_front_small_url,product_name&lc=es"
             val conn = URL(url).openConnection() as java.net.HttpURLConnection
-            conn.connectTimeout = 4000
-            conn.readTimeout = 4000
-            conn.setRequestProperty("User-Agent", "UhNoHabia-App/1.5.0")
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            conn.setRequestProperty("User-Agent", "UhNoHabia-App/1.5.3")
 
             val response = conn.inputStream.bufferedReader().readText()
             conn.disconnect()
@@ -66,15 +116,18 @@ suspend fun searchProductImage(productName: String): String? {
                     val imageUrl = product.optString("image_front_small_url", "")
                         .ifBlank { product.optString("image_small_url", "") }
                     if (imageUrl.isNotBlank() && imageUrl.startsWith("http")) {
-                        imageCache.put(productName, imageUrl)
+                        memoryCache.put(productName, imageUrl)
+                        setDiskCache(context, productName, imageUrl)
                         return@withContext imageUrl
                     }
                 }
             }
-            imageCache.put(productName, "NONE")
+            memoryCache.put(productName, "NONE")
+            setDiskCache(context, productName, "NONE")
             null
         } catch (_: Exception) {
-            imageCache.put(productName, "NONE")
+            memoryCache.put(productName, "NONE")
+            setDiskCache(context, productName, "NONE")
             null
         }
     }
@@ -90,19 +143,20 @@ fun ProductImage(
     size: Dp = 44.dp,
     modifier: Modifier = Modifier
 ) {
-    var imageUrl by remember(productName) { mutableStateOf<String?>(null) }
-    var searched by remember(productName) { mutableStateOf(false) }
+    val context = LocalContext.current
+    var imageUrl by remember(productName) { mutableStateOf<String?>(memoryCache.get(productName)?.takeIf { it != "NONE" } ?: getDiskCache(context, productName)?.takeIf { it != "NONE" }) }
+    var searched by remember(productName) { mutableStateOf(imageUrl != null) }
 
     LaunchedEffect(productName) {
         if (!searched) {
-            imageUrl = searchProductImage(productName)
+            imageUrl = searchProductImage(context, productName)
             searched = true
         }
     }
 
     if (imageUrl != null) {
         AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
+            model = ImageRequest.Builder(context)
                 .data(imageUrl)
                 .crossfade(true)
                 .build(),
@@ -111,7 +165,6 @@ fun ProductImage(
             contentScale = ContentScale.Crop
         )
     } else {
-        // Fallback: emoji in a soft colored box
         Box(
             modifier = modifier.size(size).clip(RoundedCornerShape(10.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
