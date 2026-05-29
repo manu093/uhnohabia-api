@@ -163,7 +163,7 @@ async def app_version():
         "versionCode": 13,
         "versionName": "1.5.5",
         "apkUrl": "https://github.com/manu093/uhnohabia-api/releases/download/v1.5.5/UhNoHabia.apk",
-        "releaseNotes": "Busqueda de imagenes usa nombre + marca del producto",
+        "releaseNotes": "Optimizaciones de rendimiento: queries async, cache mejorado",
         "forceUpdate": False
     }
 

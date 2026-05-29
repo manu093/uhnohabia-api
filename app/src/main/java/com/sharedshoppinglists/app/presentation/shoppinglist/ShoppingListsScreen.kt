@@ -328,8 +328,16 @@ private fun ModernListCard(list: ShoppingList, onClick: () -> Unit, onDelete: ()
 
             Column(Modifier.weight(1f)) {
                 val ctx = androidx.compose.ui.platform.LocalContext.current
-                val productCount = remember(list.id) { try { AppDatabase.getInstance(ctx).productDao().countByListId(list.id) } catch (_: Exception) { 0 } }
-                val pendingCount = remember(list.id) { try { AppDatabase.getInstance(ctx).productDao().countPendingByListId(list.id) } catch (_: Exception) { 0 } }
+                val productCount by androidx.compose.runtime.produceState(initialValue = 0, list.id) {
+                    value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try { AppDatabase.getInstance(ctx).productDao().countByListId(list.id) } catch (_: Exception) { 0 }
+                    }
+                }
+                val pendingCount by androidx.compose.runtime.produceState(initialValue = 0, list.id) {
+                    value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try { AppDatabase.getInstance(ctx).productDao().countPendingByListId(list.id) } catch (_: Exception) { 0 }
+                    }
+                }
 
                 Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(4.dp))
