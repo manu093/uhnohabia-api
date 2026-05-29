@@ -230,33 +230,33 @@ private fun ModernProductItem(product: Product, onToggle: () -> Unit, onEdit: ()
     val emoji = product.emoji.ifBlank { product.categoryEmoji }
 
     Row(
-        Modifier.fillMaxWidth().combinedClickable(onClick = onEdit, onLongClick = onLongPress)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+        Modifier.fillMaxWidth().combinedClickable(onClick = onToggle, onLongClick = onLongPress)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Circular checkbox
         Surface(
             onClick = onToggle,
-            modifier = Modifier.size(26.dp),
+            modifier = Modifier.size(28.dp),
             shape = CircleShape,
             color = if (product.isPurchased) MaterialTheme.colorScheme.primary else Color.Transparent,
             border = BorderStroke(
                 2.dp,
                 if (product.isPurchased) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
             )
         ) {
             if (product.isPurchased) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Check, "Comprado", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Default.Check, "Comprado", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                 }
             }
         }
 
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(12.dp))
 
-        // Product image
-        ProductImage(productName = product.name, emoji = emoji, size = 44.dp)
+        // Product image/emoji
+        ProductImage(productName = product.name, emoji = emoji, size = 40.dp)
 
         Spacer(Modifier.width(12.dp))
 
@@ -277,12 +277,18 @@ private fun ModernProductItem(product: Product, onToggle: () -> Unit, onEdit: ()
             }
         }
 
-        // Quantity
-        Text(
-            "${product.quantity.toInt()} ${product.unit.take(3)}",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = dim),
-            fontWeight = FontWeight.Medium
-        )
+        // Quantity badge
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ) {
+            Text(
+                "${product.quantity.toInt()} ${product.unit.take(3)}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = dim),
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
     }
 }

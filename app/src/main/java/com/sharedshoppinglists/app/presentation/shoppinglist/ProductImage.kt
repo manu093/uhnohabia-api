@@ -39,23 +39,21 @@ private val imageCache = LruCache<String, String>(200)
  */
 suspend fun searchProductImage(productName: String): String? {
     // Check cache first
-    imageCache.get(productName)?.let { return it }
+    imageCache.get(productName)?.let { return if (it == "NONE") null else it }
 
     return withContext(Dispatchers.IO) {
         try {
-            // Clean product name for search
-            val query = productName.lowercase()
-                .replace(Regex("[^a-záéíóúñü0-9 ]"), "")
-                .trim()
-                .take(40)
+            // Clean product name for search - keep spanish chars
+            val query = productName.lowercase().trim().take(30)
+            if (query.length < 3) { imageCache.put(productName, "NONE"); return@withContext null }
 
-            if (query.length < 2) return@withContext null
-
-            val url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms=$query&search_simple=1&action=process&json=1&page_size=1&fields=image_small_url,image_url,product_name"
+            // Try Open Food Facts with Spanish locale
+            val encoded = java.net.URLEncoder.encode(query, "UTF-8")
+            val url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms=$encoded&search_simple=1&action=process&json=1&page_size=3&fields=image_small_url,image_front_small_url,product_name&lc=es"
             val conn = URL(url).openConnection() as java.net.HttpURLConnection
-            conn.connectTimeout = 3000
-            conn.readTimeout = 3000
-            conn.setRequestProperty("User-Agent", "UhNoHabia-App/1.3.0")
+            conn.connectTimeout = 4000
+            conn.readTimeout = 4000
+            conn.setRequestProperty("User-Agent", "UhNoHabia-App/1.5.0")
 
             val response = conn.inputStream.bufferedReader().readText()
             conn.disconnect()
@@ -63,16 +61,20 @@ suspend fun searchProductImage(productName: String): String? {
             val json = JSONObject(response)
             val products = json.optJSONArray("products")
             if (products != null && products.length() > 0) {
-                val product = products.getJSONObject(0)
-                val imageUrl = product.optString("image_small_url", "")
-                    .ifBlank { product.optString("image_url", "") }
-                if (imageUrl.isNotBlank()) {
-                    imageCache.put(productName, imageUrl)
-                    return@withContext imageUrl
+                for (i in 0 until products.length()) {
+                    val product = products.getJSONObject(i)
+                    val imageUrl = product.optString("image_front_small_url", "")
+                        .ifBlank { product.optString("image_small_url", "") }
+                    if (imageUrl.isNotBlank() && imageUrl.startsWith("http")) {
+                        imageCache.put(productName, imageUrl)
+                        return@withContext imageUrl
+                    }
                 }
             }
+            imageCache.put(productName, "NONE")
             null
         } catch (_: Exception) {
+            imageCache.put(productName, "NONE")
             null
         }
     }
@@ -105,17 +107,17 @@ fun ProductImage(
                 .crossfade(true)
                 .build(),
             contentDescription = productName,
-            modifier = modifier.size(size).clip(RoundedCornerShape(12.dp)),
+            modifier = modifier.size(size).clip(RoundedCornerShape(10.dp)),
             contentScale = ContentScale.Crop
         )
     } else {
-        // Fallback: emoji in a colored box
+        // Fallback: emoji in a soft colored box
         Box(
-            modifier = modifier.size(size).clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            modifier = modifier.size(size).clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(emoji.ifBlank { "\uD83D\uDCE6" }, fontSize = (size.value * 0.45f).sp)
+            Text(emoji.ifBlank { "\uD83D\uDCE6" }, fontSize = (size.value * 0.5f).sp)
         }
     }
 }
