@@ -139,23 +139,29 @@ fun ShoppingListsScreen(
         ) {
             // Header
             item {
-                Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp, top = 56.dp, bottom = 16.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Listas de compras", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                        Row {
-                            IconButton(onClick = onGlobalSearchClick) {
-                                Text("\uD83D\uDD0D", fontSize = 20.sp)
-                            }
-                            IconButton(onClick = onPaymentMethodsClick) { Icon(Icons.Default.Settings, "Config", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                            Box {
-                                IconButton(onClick = { showMenu = !showMenu }) { Icon(Icons.Default.MoreVert, "Mas", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                                    DropdownMenuItem(text = { Text("Categorias") }, onClick = { showMenu = false; onCategoryManagementClick() })
-                                    DropdownMenuItem(text = { Text("Mis Productos") }, onClick = { showMenu = false; onKnownProductsClick() })
-                                    DropdownMenuItem(text = { Text("Precios") }, onClick = { showMenu = false; onPriceCatalogClick() })
-                                    HorizontalDivider()
-                                    DropdownMenuItem(text = { Text("Cerrar Sesion") }, onClick = { showMenu = false; onLogout() })
-                                }
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 48.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Mis Listas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        if (lists.isNotEmpty()) {
+                            Text("${lists.size} lista${if (lists.size > 1) "s" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Row {
+                        IconButton(onClick = onGlobalSearchClick) { Text("\uD83D\uDD0D", fontSize = 18.sp) }
+                        IconButton(onClick = onPriceCatalogClick) { Text("\uD83D\uDCB0", fontSize = 18.sp) }
+                        IconButton(onClick = onPaymentMethodsClick) { Icon(Icons.Default.Settings, "Config", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp)) }
+                        Box {
+                            IconButton(onClick = { showMenu = !showMenu }) { Icon(Icons.Default.MoreVert, "Mas", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp)) }
+                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                DropdownMenuItem(text = { Text("Categorias") }, onClick = { showMenu = false; onCategoryManagementClick() })
+                                DropdownMenuItem(text = { Text("Mis Productos") }, onClick = { showMenu = false; onKnownProductsClick() })
+                                DropdownMenuItem(text = { Text("Precios") }, onClick = { showMenu = false; onPriceCatalogClick() })
+                                HorizontalDivider()
+                                DropdownMenuItem(text = { Text("Cerrar Sesion") }, onClick = { showMenu = false; onLogout() })
                             }
                         }
                     }
