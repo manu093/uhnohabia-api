@@ -160,10 +160,10 @@ async def terms_of_use():
 async def app_version():
     """Returns current app version info for OTA updates."""
     return {
-        "versionCode": 16,
-        "versionName": "1.7.1",
-        "apkUrl": "https://github.com/manu093/uhnohabia-api/releases/download/v1.7.1/UhNoHabia.apk",
-        "releaseNotes": "Header compacto con accesos rapidos",
+        "versionCode": 17,
+        "versionName": "1.7.2",
+        "apkUrl": "https://github.com/manu093/uhnohabia-api/releases/download/v1.7.2/UhNoHabia.apk",
+        "releaseNotes": "Emojis en toda la app: toolbar, botones, navegacion",
         "forceUpdate": False
     }
 
@@ -171,7 +171,7 @@ async def app_version():
 async def app_download():
     """Redirect to APK download URL."""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse("https://github.com/manu093/uhnohabia-api/releases/download/v1.7.1/UhNoHabia.apk")
+    return RedirectResponse("https://github.com/manu093/uhnohabia-api/releases/download/v1.7.2/UhNoHabia.apk")
 
 @app.get("/health")
 async def health():

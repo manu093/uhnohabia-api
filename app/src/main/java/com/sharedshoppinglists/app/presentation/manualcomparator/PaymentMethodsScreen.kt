@@ -64,7 +64,7 @@ fun PaymentMethodsScreen(viewModel: PaymentMethodsViewModel, onBack: () -> Unit)
     Scaffold(topBar = {
         TopAppBar(
             title = { Text("Medios de Pago", fontWeight = FontWeight.Bold) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") } },
+            navigationIcon = { IconButton(onClick = onBack) { Text("\u2B05\uFE0F", fontSize = 18.sp) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
         )
     }) { padding ->

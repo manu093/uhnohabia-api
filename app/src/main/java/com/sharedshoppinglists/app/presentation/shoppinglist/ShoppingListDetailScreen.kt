@@ -130,11 +130,11 @@ fun ShoppingListDetailScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { viewModel.uncheckAllProducts() }) { Icon(Icons.Default.Refresh, "Desmarcar todos") }
-                        IconButton(onClick = { onShoppingMode(listId) }) { Icon(Icons.Default.ShoppingCart, "Modo super") }
-                        IconButton(onClick = { onOptimize(listId) }) { Icon(Icons.Default.Star, "Optimizar") }
-                        IconButton(onClick = { showImportDialog = true }) { Icon(Icons.Default.Add, "Importar") }
-                        IconButton(onClick = { showShareDialog = true }) { Icon(Icons.Default.Share, "Compartir") }
+                        IconButton(onClick = { viewModel.uncheckAllProducts() }) { Text("\uD83D\uDD04", fontSize = 18.sp) }
+                        IconButton(onClick = { onShoppingMode(listId) }) { Text("\uD83D\uDED2", fontSize = 18.sp) }
+                        IconButton(onClick = { onOptimize(listId) }) { Text("\u2B50", fontSize = 18.sp) }
+                        IconButton(onClick = { showImportDialog = true }) { Text("\uD83D\uDCE5", fontSize = 18.sp) }
+                        IconButton(onClick = { showShareDialog = true }) { Text("\uD83D\uDD17", fontSize = 18.sp) }
                     }
                 )
                 // Progress bar
@@ -160,7 +160,7 @@ fun ShoppingListDetailScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = CircleShape
                 ) {
-                    Icon(Icons.Default.Add, "Agregar producto")
+                    Text("\u2795", fontSize = 22.sp)
                 }
             }
         }

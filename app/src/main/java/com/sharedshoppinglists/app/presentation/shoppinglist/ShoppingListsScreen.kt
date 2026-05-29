@@ -274,7 +274,7 @@ private fun ListCard(list: ShoppingList, onClick: () -> Unit, onDelete: () -> Un
             }
 
             // Arrow
-            Text("\u203A", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+            Text("\u203A", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
         }
     }
 }
