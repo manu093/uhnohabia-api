@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val designStyle = remember { getDesignStyle(this) }
-            var updateAvailable by mutableStateOf<com.sharedshoppinglists.app.data.sync.AppUpdate?>(null)
+            var updateAvailable by remember { mutableStateOf<com.sharedshoppinglists.app.data.sync.AppUpdate?>(null) }
             androidx.compose.runtime.LaunchedEffect(Unit) {
                 updateAvailable = UpdateChecker.checkForUpdate(this@MainActivity)
             }
