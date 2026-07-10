@@ -165,12 +165,12 @@ fun LoginScreen(
             Spacer(Modifier.height(16.dp))
 
             // Forgot password
-            var resetSent by rememberSaveable { mutableStateOf(false) }
-            TextButton(onClick = { if (email.isNotBlank()) { viewModel.sendPasswordReset(email); resetSent = true } }, enabled = email.isNotBlank()) {
+            val resetMessage by viewModel.passwordResetMessage.collectAsStateWithLifecycle()
+            TextButton(onClick = { if (email.isNotBlank()) viewModel.sendPasswordReset(email) }, enabled = email.isNotBlank()) {
                 Text("\u00bfOlvidaste tu contrase\u00f1a?", color = MaterialTheme.colorScheme.primary)
             }
-            if (resetSent) {
-                Text("Se envi\u00f3 un correo a $email", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            resetMessage?.let { msg ->
+                Text(msg, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
 
             Spacer(Modifier.height(24.dp))

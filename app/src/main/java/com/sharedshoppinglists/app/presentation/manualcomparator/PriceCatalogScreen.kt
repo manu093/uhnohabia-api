@@ -56,6 +56,7 @@ fun PriceCatalogScreen(viewModel: PriceCatalogViewModel, onBack: () -> Unit) {
     val status by viewModel.status.collectAsStateWithLifecycle()
     val filterCadena by viewModel.filterCadena.collectAsStateWithLifecycle()
     val promos by viewModel.promos.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     val activePromoIds = remember { getActivePromoIds(context) }
     val activePromos = promos.filter { activePromoIds.contains(it.id.toString()) }
@@ -106,6 +107,9 @@ fun PriceCatalogScreen(viewModel: PriceCatalogViewModel, onBack: () -> Unit) {
 
             when {
                 isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                error != null && products.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(error ?: "", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
                 products.isEmpty() && query.length >= 2 -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No se encontraron productos.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

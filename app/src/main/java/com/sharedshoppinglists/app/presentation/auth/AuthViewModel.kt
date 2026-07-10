@@ -63,11 +63,17 @@ class AuthViewModel @Inject constructor(
         _authState.value = AuthState.Idle
     }
 
+    private val _passwordResetMessage = MutableStateFlow<String?>(null)
+    val passwordResetMessage: StateFlow<String?> = _passwordResetMessage.asStateFlow()
+
     fun sendPasswordReset(email: String) {
         viewModelScope.launch {
-            try {
+            _passwordResetMessage.value = try {
                 authRepository.sendPasswordResetEmail(email)
-            } catch (_: Exception) { }
+                "Te enviamos un correo a $email para restablecer tu contrase\u00f1a."
+            } catch (e: Exception) {
+                e.localizedMessage ?: "No se pudo enviar el correo. Verific\u00e1 el email e intent\u00e1 de nuevo."
+            }
         }
     }
 

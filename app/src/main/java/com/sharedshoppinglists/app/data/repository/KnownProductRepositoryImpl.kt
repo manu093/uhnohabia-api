@@ -18,20 +18,25 @@ import java.util.UUID
 import javax.inject.Inject
 
 class KnownProductRepositoryImpl @Inject constructor(
-    private val dao: KnownProductDao
+    private val dao: KnownProductDao,
+    private val appScope: CoroutineScope
 ) : KnownProductRepository {
 
     private val firestore = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     init {
-        // Sync knownProducts from Firestore to Room on startup
-        syncFromFirestore()
+        // Sincroniza cuando hay usuario logueado (y en cada login futuro),
+        // usando el scope de app inyectado en vez de crear uno que nunca se cancela.
+        auth.addAuthStateListener { fb ->
+            if (fb.currentUser != null) syncFromFirestore()
+        }
     }
 
     private fun syncFromFirestore() {
-        CoroutineScope(Dispatchers.IO).launch {
+        appScope.launch {
             try {
-                val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+                val uid = auth.currentUser?.uid ?: return@launch
                 val docs = firestore.collection("knownProducts")
                     .whereEqualTo("ownerId", uid)
                     .get()
@@ -78,7 +83,7 @@ class KnownProductRepositoryImpl @Inject constructor(
     }
 
     private fun syncToFirestore(product: KnownProduct) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val uid = auth.currentUser?.uid ?: return
         val data = mapOf(
             "ownerId" to uid,
             "name" to product.name,
@@ -86,7 +91,9 @@ class KnownProductRepositoryImpl @Inject constructor(
             "categoryId" to product.categoryId,
             "defaultUnit" to product.defaultUnit
         )
-        firestore.collection("knownProducts").document("${uid}_${product.name}").set(data)
+        // Firestore no admite '/' en el id del documento.
+        val docId = "${uid}_${product.name}".replace("/", "_")
+        firestore.collection("knownProducts").document(docId).set(data)
     }
 
     override fun getAll(): Flow<List<KnownProduct>> {

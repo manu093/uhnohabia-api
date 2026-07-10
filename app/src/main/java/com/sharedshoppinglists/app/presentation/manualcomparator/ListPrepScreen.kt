@@ -62,6 +62,7 @@ fun ListPrepScreen(viewModel: ListPrepViewModel, listId: String, onBack: () -> U
     val isOptimizing by viewModel.isOptimizing.collectAsStateWithLifecycle()
     val result by viewModel.result.collectAsStateWithLifecycle()
     val selectedDay by viewModel.selectedDay.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     LaunchedEffect(listId) { viewModel.loadList(listId) }
 
@@ -83,6 +84,13 @@ fun ListPrepScreen(viewModel: ListPrepViewModel, listId: String, onBack: () -> U
             }
             else -> {
                 LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    error?.let { msg ->
+                        item {
+                            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                                Text(msg, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.padding(12.dp))
+                            }
+                        }
+                    }
                     item {
                         Text("Elegí la marca de cada producto y el día de compra.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(8.dp))

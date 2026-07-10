@@ -16,6 +16,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -50,6 +52,9 @@ class ListPrepViewModel @Inject constructor(
 
     private val _isOptimizing = MutableStateFlow(false)
     val isOptimizing: StateFlow<Boolean> = _isOptimizing.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     private val _selectedDay = MutableStateFlow(getCurrentDayName())
     val selectedDay: StateFlow<String> = _selectedDay.asStateFlow()
@@ -130,6 +135,7 @@ class ListPrepViewModel @Inject constructor(
     fun optimize() {
         viewModelScope.launch {
             _isOptimizing.value = true
+            _error.value = null
             val selectedMedios = PaymentMethodsStore.getSelectedIds(context).toList()
             val chainPrefs = context.getSharedPreferences("chain_prefs", android.content.Context.MODE_PRIVATE)
             val selectedChains = chainPrefs.getStringSet("selected_chains", null)?.toList() ?: emptyList()
@@ -147,23 +153,23 @@ class ListPrepViewModel @Inject constructor(
                     ProductoOptimizar(productoId = "cualquier_marca", nombre = sn, cantidad = prod.quantity.toInt().coerceAtLeast(1), unidad = prod.unit)
                 }
             }
-            val request = OptimizarRequest(
-                productos = productos,
-                mediosPagoIds = selectedMedios,
-                tarjetasSeleccionadas = cardSels.mapKeys { it.key.toString() },
-                diaSemana = _selectedDay.value,
-                cadenas = selectedChains
-            )
-            _result.value = try { catalogClient.optimizar(request) } catch (_: Exception) { null }
-
-            // Calculate for all days to find the best day
+            // Calcula los 7 dias EN PARALELO (antes eran 7 llamadas pesadas secuenciales con scraping en vivo).
             val allDays = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábados", "Domingo")
-            val dayResults = mutableMapOf<String, OptimizationResult?>()
-            for (day in allDays) {
-                if (day == _selectedDay.value) { dayResults[day] = _result.value; continue }
-                val dayReq = OptimizarRequest(productos = productos, mediosPagoIds = selectedMedios,
-                    tarjetasSeleccionadas = cardSels.mapKeys { it.key.toString() }, diaSemana = day, cadenas = selectedChains)
-                dayResults[day] = try { catalogClient.optimizar(dayReq) } catch (_: Exception) { null }
+            val dayResults = coroutineScope {
+                allDays.associateWith { day ->
+                    async {
+                        val dayReq = OptimizarRequest(
+                            productos = productos, mediosPagoIds = selectedMedios,
+                            tarjetasSeleccionadas = cardSels.mapKeys { it.key.toString() },
+                            diaSemana = day, cadenas = selectedChains
+                        )
+                        try { catalogClient.optimizar(dayReq) } catch (_: Exception) { null }
+                    }
+                }.mapValues { it.value.await() }
+            }
+            _result.value = dayResults[_selectedDay.value]
+            if (_result.value == null) {
+                _error.value = "No se pudo calcular la optimizaci\u00f3n. Revis\u00e1 tu conexi\u00f3n e intent\u00e1 de nuevo."
             }
             _bestDayResult.value = dayResults
 

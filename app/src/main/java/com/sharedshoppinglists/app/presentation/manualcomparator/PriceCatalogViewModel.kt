@@ -26,6 +26,9 @@ class PriceCatalogViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     private val _status = MutableStateFlow<CatalogStatus?>(null)
     val status: StateFlow<CatalogStatus?> = _status.asStateFlow()
 
@@ -47,9 +50,13 @@ class PriceCatalogViewModel @Inject constructor(
         if (query.length < 2) { _products.value = emptyList(); return }
         viewModelScope.launch {
             _isLoading.value = true
-            _products.value = try {
-                catalogClient.searchProducts(query, marca, _filterCadena.value)
-            } catch (_: Exception) { emptyList() }
+            _error.value = null
+            try {
+                _products.value = catalogClient.searchProducts(query, marca, _filterCadena.value)
+            } catch (_: Exception) {
+                _products.value = emptyList()
+                _error.value = "No se pudieron cargar los precios. Revis\u00e1 tu conexi\u00f3n."
+            }
             _isLoading.value = false
         }
     }

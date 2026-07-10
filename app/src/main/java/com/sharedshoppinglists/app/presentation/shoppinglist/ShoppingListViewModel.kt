@@ -59,6 +59,10 @@ class ShoppingListViewModel @Inject constructor(
     private val _catalogStatus = MutableStateFlow<CatalogStatus?>(null)
     val catalogStatus: StateFlow<CatalogStatus?> = _catalogStatus.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+    fun clearError() { _error.value = null }
+
     val shoppingLists: StateFlow<List<ShoppingList>> = _currentUserId
         .flatMapLatest { userId ->
             if (userId != null) shoppingListRepository.getLists(userId) else flowOf(emptyList())
@@ -112,18 +116,21 @@ class ShoppingListViewModel @Inject constructor(
         val userId = _currentUserId.value ?: return
         viewModelScope.launch {
             shoppingListRepository.createList(name, userId, emoji)
+                .onFailure { _error.value = it.message ?: "No se pudo crear la lista." }
         }
     }
 
     fun deleteList(listId: String) {
         viewModelScope.launch {
             shoppingListRepository.deleteList(listId)
+                .onFailure { _error.value = it.message ?: "No se pudo eliminar la lista." }
         }
     }
 
     fun renameList(listId: String, newName: String) {
         viewModelScope.launch {
             shoppingListRepository.renameList(listId, newName)
+                .onFailure { _error.value = it.message ?: "No se pudo renombrar la lista." }
         }
     }
 
@@ -196,6 +203,7 @@ class ShoppingListViewModel @Inject constructor(
     private fun doAddProduct(listId: String, product: Product) {
         viewModelScope.launch {
             shoppingListRepository.addProduct(listId, product)
+                .onFailure { _error.value = it.message ?: "No se pudo agregar el producto." }
             knownProductRepository.saveOrIncrement(
                 KnownProduct(
                     id = UUID.randomUUID().toString(),
@@ -212,6 +220,7 @@ class ShoppingListViewModel @Inject constructor(
         val listId = _selectedListId.value ?: return
         viewModelScope.launch {
             shoppingListRepository.updateProduct(listId, product)
+                .onFailure { _error.value = it.message ?: "No se pudo actualizar el producto." }
         }
     }
 
@@ -219,6 +228,7 @@ class ShoppingListViewModel @Inject constructor(
         val listId = _selectedListId.value ?: return
         viewModelScope.launch {
             shoppingListRepository.removeProduct(listId, productId)
+                .onFailure { _error.value = it.message ?: "No se pudo eliminar el producto." }
         }
     }
 
@@ -226,6 +236,7 @@ class ShoppingListViewModel @Inject constructor(
         val listId = _selectedListId.value ?: return
         viewModelScope.launch {
             shoppingListRepository.markProductAsPurchased(listId, productId, purchased)
+                .onFailure { _error.value = it.message ?: "No se pudo actualizar el producto." }
         }
     }
 
@@ -329,7 +340,10 @@ class ShoppingListViewModel @Inject constructor(
     }
 
     fun updateListEmoji(listId: String, emoji: String) {
-        viewModelScope.launch { shoppingListRepository.updateListEmoji(listId, emoji) }
+        viewModelScope.launch {
+            shoppingListRepository.updateListEmoji(listId, emoji)
+                .onFailure { _error.value = it.message ?: "No se pudo cambiar el icono." }
+        }
     }
 
     fun dismissNotifications() {

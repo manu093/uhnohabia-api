@@ -153,20 +153,42 @@ class ShoppingListRepositoryImpl @Inject constructor(
                     .get()
                     .await()
 
+                val remoteIds = mutableSetOf<String>()
                 for (doc in sharedDocs.documents) {
                     val id = doc.id
+                    remoteIds.add(id)
+                    val remoteUpdatedAt = getTimestampMillis(doc, "updatedAt")
                     val existing = shoppingListDao.getById(id)
                     if (existing == null) {
-                        val entity = ShoppingListEntity(
+                        shoppingListDao.insert(ShoppingListEntity(
                             id = id,
                             name = doc.getString("name") ?: "",
                             ownerId = doc.getString("ownerId") ?: "",
                             isShared = doc.getBoolean("isShared") ?: false,
+                            emoji = doc.getString("emoji") ?: "",
                             createdAt = getTimestampMillis(doc, "createdAt"),
-                            updatedAt = getTimestampMillis(doc, "updatedAt"),
+                            updatedAt = remoteUpdatedAt,
                             pendingSync = false
-                        )
-                        shoppingListDao.insert(entity)
+                        ))
+                    } else if (!existing.pendingSync && remoteUpdatedAt >= existing.updatedAt) {
+                        // Aplica cambios remotos que antes NO bajaban: renombrar, emoji, dejar de compartir.
+                        shoppingListDao.update(existing.copy(
+                            name = doc.getString("name") ?: existing.name,
+                            ownerId = doc.getString("ownerId") ?: existing.ownerId,
+                            isShared = doc.getBoolean("isShared") ?: existing.isShared,
+                            emoji = doc.getString("emoji") ?: existing.emoji,
+                            updatedAt = remoteUpdatedAt
+                        ))
+                    }
+                }
+
+                // Reconciliacion de borrado: una lista COMPARTIDA ya sincronizada que no vuelve
+                // en la consulta = te sacaron o la borraron -> borrar local. Conservador: solo
+                // shared + no pendingSync, para no tocar listas propias ni creadas offline.
+                for (local in shoppingListDao.getAllSync()) {
+                    if (local.isShared && !local.pendingSync && local.id !in remoteIds) {
+                        productDao.deleteByListId(local.id)
+                        shoppingListDao.deleteById(local.id)
                     }
                 }
             } catch (_: Exception) { }
@@ -249,6 +271,15 @@ class ShoppingListRepositoryImpl @Inject constructor(
                                 pendingSync = false
                             ))
                         }
+                    }
+                }
+
+                // Reconciliacion: productos borrados en otro dispositivo -> borrarlos local
+                // (solo los ya sincronizados; los agregados offline con pendingSync se respetan).
+                val remoteProductIds = productDocs.documents.map { it.id }.toSet()
+                for (local in productDao.getByListIdSync(listId)) {
+                    if (!local.pendingSync && local.id !in remoteProductIds) {
+                        productDao.deleteById(local.id)
                     }
                 }
             } catch (_: Exception) { }

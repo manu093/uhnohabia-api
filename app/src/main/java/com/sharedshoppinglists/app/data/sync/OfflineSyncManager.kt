@@ -69,7 +69,11 @@ class OfflineSyncManager @Inject constructor(
         val data = mapOf(
             "name" to list.name,
             "ownerId" to list.ownerId,
+            // Sin 'members' la consulta whereArrayContains("members", uid) no la devuelve,
+            // asi que la lista creada offline no sincronizaria a otros dispositivos. El dueno es el miembro inicial.
+            "members" to listOf(list.ownerId),
             "isShared" to list.isShared,
+            "emoji" to list.emoji,
             "createdAt" to list.createdAt,
             "updatedAt" to list.updatedAt
         )

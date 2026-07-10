@@ -6,6 +6,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
@@ -175,7 +176,7 @@ class SepaCatalogClientImpl @Inject constructor(
                 put("dia_semana", request.diaSemana)
                 if (request.cadenas.isNotEmpty()) put("cadenas", org.json.JSONArray(request.cadenas))
             }
-            val reqBody = okhttp3.RequestBody.create("application/json; charset=utf-8".toMediaType(), jsonBody.toString())
+            val reqBody = jsonBody.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
             val req = Request.Builder().url("$baseUrl/catalog/optimizar").post(reqBody)
                 .header("User-Agent", "UhNoHabia-Android/1.0").header("Content-Type", "application/json").build()
             val resp = httpClient.newCall(req).execute()
@@ -187,7 +188,7 @@ class SepaCatalogClientImpl @Inject constructor(
             val faltantes = o.optJSONArray("productosFaltantes") ?: org.json.JSONArray()
             val seleccionados = o.optJSONArray("productosSeleccionados") ?: org.json.JSONArray()
             com.sharedshoppinglists.app.domain.model.OptimizationResult(
-                cadenaRecomendada = o.optString("cadenaRecomendada", null),
+                cadenaRecomendada = if (o.isNull("cadenaRecomendada")) null else o.getString("cadenaRecomendada"),
                 totalOriginal = o.optDouble("totalOriginal", 0.0),
                 totalFinal = o.optDouble("totalFinal", 0.0),
                 ahorroTotal = o.optDouble("ahorroTotal", 0.0),
@@ -195,7 +196,7 @@ class SepaCatalogClientImpl @Inject constructor(
                 distribucionPagos = (0 until pagos.length()).map { i ->
                     val p = pagos.getJSONObject(i)
                     com.sharedshoppinglists.app.domain.model.PagoDistribuido(
-                        p.getString("medioPago"), p.optString("tarjeta", null),
+                        p.getString("medioPago"), if (p.isNull("tarjeta")) null else p.getString("tarjeta"),
                         p.getDouble("monto"), p.getDouble("descuentoPct"),
                         p.getDouble("ahorro"), p.getBoolean("topeAplicado"))
                 },
@@ -220,7 +221,7 @@ class SepaCatalogClientImpl @Inject constructor(
                         distribucionPagos = (0 until rPagos.length()).map { j ->
                             val p2 = rPagos.getJSONObject(j)
                             com.sharedshoppinglists.app.domain.model.PagoDistribuido(
-                                p2.getString("medioPago"), p2.optString("tarjeta", null),
+                                p2.getString("medioPago"), if (p2.isNull("tarjeta")) null else p2.getString("tarjeta"),
                                 p2.getDouble("monto"), p2.getDouble("descuentoPct"),
                                 p2.getDouble("ahorro"), p2.getBoolean("topeAplicado"))
                         },

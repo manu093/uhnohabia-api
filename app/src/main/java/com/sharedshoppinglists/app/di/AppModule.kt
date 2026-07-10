@@ -105,8 +105,8 @@ object AppModule {
         CustomCategoryRepositoryImpl(dao)
 
     @Provides @Singleton
-    fun provideKnownProductRepository(dao: KnownProductDao): KnownProductRepository =
-        KnownProductRepositoryImpl(dao)
+    fun provideKnownProductRepository(dao: KnownProductDao, appScope: kotlinx.coroutines.CoroutineScope): KnownProductRepository =
+        KnownProductRepositoryImpl(dao, appScope)
 
     @Provides @Singleton
     fun provideSepaCatalogClient(httpClient: OkHttpClient): SepaCatalogClient =

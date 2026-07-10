@@ -11,7 +11,9 @@ import com.sharedshoppinglists.app.domain.repository.AuthRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class FirebaseAuthRepository @Inject constructor(
@@ -75,7 +77,7 @@ class FirebaseAuthRepository @Inject constructor(
 
     override suspend fun logout() {
         firebaseAuth.signOut()
-        appDatabase.clearAllTables()
+        withContext(Dispatchers.IO) { appDatabase.clearAllTables() }
     }
 
     override suspend fun sendPasswordResetEmail(email: String) {

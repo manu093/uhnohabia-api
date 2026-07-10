@@ -60,6 +60,8 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -110,6 +112,11 @@ fun ShoppingListsScreen(
     val pendingInvitations by viewModel.pendingInvitations.collectAsStateWithLifecycle()
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
     val catalogStatus by viewModel.catalogStatus.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(error) {
+        error?.let { snackbarHostState.showSnackbar(it); viewModel.clearError() }
+    }
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var listToDelete by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
     var listToRename by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
@@ -121,6 +128,7 @@ fun ShoppingListsScreen(
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End) {
                 AnimatedVisibility(visible = fabExpanded, enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom), exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom)) {

@@ -160,10 +160,10 @@ async def terms_of_use():
 async def app_version():
     """Returns current app version info for OTA updates."""
     return {
-        "versionCode": 21,
-        "versionName": "1.7.6",
-        "apkUrl": "https://github.com/manu093/uhnohabia-api/releases/download/v1.7.6/UhNoHabia.apk",
-        "releaseNotes": "Login y registro renovados, comparador y catalogo de precios con iconos nuevos y navegacion mas prolija.",
+        "versionCode": 22,
+        "versionName": "1.7.7",
+        "apkUrl": "https://github.com/manu093/uhnohabia-api/releases/download/v1.7.7/UhNoHabia.apk",
+        "releaseNotes": "Mejoras de estabilidad: sincronizacion mas confiable, avisos de error claros, optimizador mas rapido y correcciones varias.",
         "forceUpdate": False
     }
 
@@ -171,7 +171,7 @@ async def app_version():
 async def app_download():
     """Redirect to APK download URL."""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse("https://github.com/manu093/uhnohabia-api/releases/download/v1.7.6/UhNoHabia.apk")
+    return RedirectResponse("https://github.com/manu093/uhnohabia-api/releases/download/v1.7.7/UhNoHabia.apk")
 
 @app.get("/health")
 async def health():
@@ -399,6 +399,7 @@ async def auth_login_page(
     response_type: str = ""
 ):
     """Login page shown to user during Alexa Account Linking."""
+    import html
     return f"""
     <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
     <style>body{{font-family:sans-serif;max-width:400px;margin:40px auto;padding:20px}}
@@ -407,8 +408,8 @@ async def auth_login_page(
     h2{{text-align:center}}</style></head>
     <body><h2>🛒 Uh no había</h2><p>Iniciá sesión para vincular tu cuenta con Alexa</p>
     <form method="post" action="/auth/token">
-    <input type="hidden" name="redirect_uri" value="{redirect_uri}">
-    <input type="hidden" name="state" value="{state}">
+    <input type="hidden" name="redirect_uri" value="{html.escape(redirect_uri, quote=True)}">
+    <input type="hidden" name="state" value="{html.escape(state, quote=True)}">
     <input type="email" name="email" placeholder="Correo electrónico" required>
     <input type="password" name="password" placeholder="Contraseña" required>
     <button type="submit">Vincular cuenta</button>
@@ -467,12 +468,20 @@ async def auth_token(
         token = uuid.uuid4().hex
         _save_token(token, uid)
 
+        # Seguridad: solo permitir redirect a hosts de Amazon/Alexa (evita open redirect + XSS reflejado).
+        from urllib.parse import urlparse, quote
+        import json as _json
+        _p = urlparse(redirect_uri)
+        _host = (_p.netloc or "").lower()
+        _amazon = _host.endswith(".amazon.com") or _host.endswith(".amazon.co.jp") or _host in ("amazon.com", "amazon.co.jp")
+        if _p.scheme != "https" or not _amazon:
+            return HTMLResponse("<h2>Error: redirect_uri no permitido</h2>", status_code=400)
+
         # Redirect back to Alexa with token in URL fragment
-        # Format: redirect_uri#state=xyz&access_token=token&token_type=Bearer
-        fragment = f"state={state}&access_token={token}&token_type=Bearer"
+        fragment = f"state={quote(state)}&access_token={token}&token_type=Bearer"
         redirect_url = f"{redirect_uri}#{fragment}"
         return HTMLResponse(
-            f'<html><body><script>window.location.replace("{redirect_url}");</script></body></html>',
+            f'<html><body><script>window.location.replace({_json.dumps(redirect_url)});</script></body></html>',
             status_code=200
         )
     except Exception as e:
@@ -1269,6 +1278,16 @@ def catalog_optimizar(body: dict):
         if not promo_dia or not dia: return True
         return promo_dia.lower() == dia.lower()
 
+    # Honra las tarjetas seleccionadas por el usuario: si la promo es de una tarjeta
+    # especifica y el usuario eligio tarjetas para ese medio de pago, solo aplica si coincide.
+    def card_ok(tarjeta, medio_id):
+        if not tarjeta:
+            return True
+        sel = tarjetas_sel.get(str(medio_id))
+        if not sel:
+            return True
+        return tarjeta in sel
+
     # Map cadena -> VTEX base URL for real-time fallback search
     _CADENA_VTEX = {
         "DIA": "https://diaonline.supermercadosdia.com.ar",
@@ -1423,7 +1442,7 @@ def catalog_optimizar(body: dict):
         if total <= 0: continue
 
         # Apply discounts (greedy)
-        cadena_promos = [(p[1],p[2],p[3],p[4],p[5]) for p in all_promos if p[0]==cadena and promo_applies(p[4])]
+        cadena_promos = [(p[1],p[2],p[3],p[4],p[5]) for p in all_promos if p[0]==cadena and promo_applies(p[4]) and card_ok(p[2], p[6])]
         cadena_promos.sort(key=lambda x: -x[2])  # Sort by descuento_pct DESC
 
         remaining = total
