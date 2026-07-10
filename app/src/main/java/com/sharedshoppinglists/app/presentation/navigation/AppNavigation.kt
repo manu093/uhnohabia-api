@@ -58,8 +58,7 @@ fun AppNavigation(navController: NavHostController, startDestination: String, pe
             val vm: AuthViewModel = hiltViewModel()
             LoginScreen(viewModel = vm,
                 onNavigateToRegister = { navController.navigate(Screen.Register.route) },
-                onLoginSuccess = { navController.navigate(Screen.ShoppingLists.route) { popUpTo(Screen.Login.route) { inclusive = true } } },
-                onGoogleSignInClick = {})
+                onLoginSuccess = { navController.navigate(Screen.ShoppingLists.route) { popUpTo(Screen.Login.route) { inclusive = true } } })
         }
         composable(Screen.Register.route) {
             val vm: AuthViewModel = hiltViewModel()
@@ -99,10 +98,7 @@ fun AppNavigation(navController: NavHostController, startDestination: String, pe
                 onMySupermarketsClick = { navController.navigate(Screen.MySupermarkets.route) },
                 onAffinityProgramsClick = { navController.navigate(Screen.AffinityPrograms.route) },
                 onBarcodeScannerClick = { navController.navigate(Screen.BarcodeScanner.route) },
-                onGlobalSearchClick = { navController.navigate(Screen.GlobalSearch.route) },
-                onPriceCatalogClick = { navController.navigate(Screen.PriceCatalog.route) },
                 onMyBankPromosClick = { navController.navigate(Screen.MyBankPromos.route) },
-                onPaymentMethodsClick = { navController.navigate(Screen.Settings.route) },
                 onLogout = { navController.navigate(Screen.Login.route) { popUpTo(Screen.ShoppingLists.route) { inclusive = true } } })
         }
 

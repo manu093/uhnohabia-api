@@ -103,10 +103,7 @@ fun ShoppingListsScreen(
     onMySupermarketsClick: () -> Unit = {},
     onAffinityProgramsClick: () -> Unit = {},
     onBarcodeScannerClick: () -> Unit = {},
-    onPriceCatalogClick: () -> Unit = {},
     onMyBankPromosClick: () -> Unit = {},
-    onPaymentMethodsClick: () -> Unit = {},
-    onGlobalSearchClick: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val lists by viewModel.shoppingLists.collectAsStateWithLifecycle()

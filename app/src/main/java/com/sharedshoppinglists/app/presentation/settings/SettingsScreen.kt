@@ -89,6 +89,7 @@ fun SettingsScreen(
                 onCheckedChange = {
                     autoNightMode = it
                     prefs.edit().putBoolean("auto_night", it).apply()
+                    (context as? android.app.Activity)?.recreate()
                 }
             )
 

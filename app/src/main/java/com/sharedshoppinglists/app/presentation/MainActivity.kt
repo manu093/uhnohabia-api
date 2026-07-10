@@ -107,7 +107,15 @@ fun UhNoHabiaTheme(content: @Composable () -> Unit) {
         context.getSharedPreferences("app_theme", android.content.Context.MODE_PRIVATE)
             .getString("dark_mode", "system") ?: "system"
     }
-    val isDark = when (darkMode) {
+    val autoNight = remember {
+        context.getSharedPreferences("app_theme", android.content.Context.MODE_PRIVATE)
+            .getBoolean("auto_night", false)
+    }
+    val isDark = if (autoNight) {
+        // "Modo oscuro automatico": tema oscuro en horario nocturno (19:00 a 06:59)
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        hour >= 19 || hour < 7
+    } else when (darkMode) {
         "light" -> false
         "dark", "amoled", "gray" -> true
         else -> darkTheme // "system"

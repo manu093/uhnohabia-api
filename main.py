@@ -160,10 +160,10 @@ async def terms_of_use():
 async def app_version():
     """Returns current app version info for OTA updates."""
     return {
-        "versionCode": 23,
-        "versionName": "1.7.8",
-        "apkUrl": "https://github.com/manu093/uhnohabia-api/releases/download/v1.7.8/UhNoHabia.apk",
-        "releaseNotes": "Escaner de codigos en vivo (mas rapido y confiable) y accesos reconectados: comparador con tus precios y programas de afinidad.",
+        "versionCode": 24,
+        "versionName": "1.7.9",
+        "apkUrl": "https://github.com/manu093/uhnohabia-api/releases/download/v1.7.9/UhNoHabia.apk",
+        "releaseNotes": "Arreglado el modo oscuro automatico (activa el tema oscuro de noche) y mejoras internas de navegacion.",
         "forceUpdate": False
     }
 
@@ -171,7 +171,7 @@ async def app_version():
 async def app_download():
     """Redirect to APK download URL."""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse("https://github.com/manu093/uhnohabia-api/releases/download/v1.7.8/UhNoHabia.apk")
+    return RedirectResponse("https://github.com/manu093/uhnohabia-api/releases/download/v1.7.9/UhNoHabia.apk")
 
 @app.get("/health")
 async def health():

@@ -55,8 +55,7 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     viewModel: AuthViewModel,
     onNavigateToRegister: () -> Unit,
-    onLoginSuccess: () -> Unit,
-    onGoogleSignInClick: () -> Unit
+    onLoginSuccess: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsStateWithLifecycle()
     var email by rememberSaveable { mutableStateOf("") }
