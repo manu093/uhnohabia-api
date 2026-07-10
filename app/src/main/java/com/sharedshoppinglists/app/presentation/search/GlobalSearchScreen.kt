@@ -63,8 +63,7 @@ fun GlobalSearchScreen(onBack: () -> Unit, onListClick: (String) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
 
     Scaffold(topBar = {
-        TopAppBar(title = { Text("Buscar en todas las listas") },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") } })
+        TopAppBar(title = { Text("Buscar en todas las listas") })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             OutlinedTextField(

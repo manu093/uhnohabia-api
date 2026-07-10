@@ -18,6 +18,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -82,7 +86,10 @@ fun ListPrepScreen(viewModel: ListPrepViewModel, listId: String, onBack: () -> U
                     item {
                         Text("Elegí la marca de cada producto y el día de compra.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(8.dp))
-                        Text("📅 Día de compra:", style = MaterialTheme.typography.labelMedium)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Día de compra:", style = MaterialTheme.typography.labelMedium)
+                        }
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             DAYS.forEach { day ->
                                 FilterChip(selected = selectedDay == day, onClick = { viewModel.setDay(day) },
@@ -100,7 +107,9 @@ fun ListPrepScreen(viewModel: ListPrepViewModel, listId: String, onBack: () -> U
                     item {
                         Spacer(Modifier.height(8.dp))
                         Button(onClick = { viewModel.optimize() }, Modifier.fillMaxWidth(), enabled = products.isNotEmpty()) {
-                            Text("🔍 Optimizar Compra")
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Optimizar compra")
                         }
                         Spacer(Modifier.height(16.dp))
                     }

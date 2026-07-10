@@ -13,6 +13,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Store
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -90,12 +94,14 @@ fun MyBankPromosScreen(
             }
             grouped.forEach { (cadena, cadenaPromos) ->
                 item(key = "header_$cadena") {
-                    Text(
-                        "🏪 $cadena",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Default.Store, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Text(cadena, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
                 }
                 items(cadenaPromos, key = { it.id }) { promo ->
                     PromoCheckItem(
@@ -131,11 +137,14 @@ private fun PromoCheckItem(promo: PromoBancaria, isActive: Boolean, onToggle: (B
         ) {
             Checkbox(checked = isActive, onCheckedChange = onToggle)
             Column(Modifier.weight(1f)) {
-                Text(
-                    "🏦 ${promo.banco} — ${promo.tarjeta}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Default.CreditCard, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(16.dp))
+                    Text(
+                        "${promo.banco} — ${promo.tarjeta}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "${promo.descuentoPct.toInt()}% dto.",
@@ -144,11 +153,14 @@ private fun PromoCheckItem(promo: PromoBancaria, isActive: Boolean, onToggle: (B
                         color = MaterialTheme.colorScheme.tertiary
                     )
                     if (promo.diaSemana.isNotBlank()) {
-                        Text(
-                            "📅 ${promo.diaSemana}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(13.dp))
+                            Text(
+                                promo.diaSemana,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                     if (promo.topeReintegro > 0) {
                         Text(
