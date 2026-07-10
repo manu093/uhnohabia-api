@@ -1,0 +1,41 @@
+# Google Actions project settings
+# See: https://developers.google.com/assistant/conversational/build
+
+projectId: shared-shopping-lists-dev
+locale: es
+
+# Account linking configuration using Firebase Auth
+accountLinking:
+  enableAccountCreation: true
+  linkingType: GOOGLE_SIGN_IN
+  googleSignIn:
+    clientId: "000000000000-placeholder.apps.googleusercontent.com"
+  # Alternative: OAuth-based linking for email/password users
+  # linkingType: OAUTH_AND_GOOGLE_SIGN_IN
+  # oauthAndGoogleSignIn:
+  #   clientId: "YOUR_OAUTH_CLIENT_ID"
+  #   authorizationUrl: "https://shared-shopping-lists-dev.firebaseapp.com/__/auth/handler"
+  #   tokenUrl: "https://oauth2.googleapis.com/token"
+  #   scopes:
+  #     - "email"
+  #     - "profile"
+
+# Category and surface capabilities
+category: PRODUCTIVITY
+usesDigitalPurchaseApi: false
+usesInteractiveCanvas: false
+usesHomeStorage: false
+
+# Display name shown to users
+displayName: Lista de Compras Compartidas
+pronunciation: Lista de Compras
+
+# Description for the Actions directory
+shortDescription: Agregá productos a tus listas de compras con la voz
+longDescription: >
+  Usá Google Assistant para agregar productos a tus listas de compras compartidas.
+  Podés decir "Agregar leche a mi lista del super" y el producto se agrega
+  automáticamente. Soporta múltiples productos, cantidades y unidades.
+
+# Voice and fulfillment
+voiceName: female_1

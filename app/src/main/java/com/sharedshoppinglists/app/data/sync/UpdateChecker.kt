@@ -5,6 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.content.pm.Signature
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -109,11 +111,67 @@ object UpdateChecker {
     private fun installApk(context: Context, versionName: String) {
         val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "UhNoHabia-${versionName}.apk")
         if (!file.exists()) return
+
+        // Seguridad: solo instalar el APK descargado si esta firmado con el mismo
+        // certificado que la app ya instalada. Bloquea un APK adulterado o ajeno
+        // aunque la URL/host de descarga este comprometida.
+        if (!isSignedBySameCertAsInstalledApp(context, file)) {
+            file.delete()
+            Toast.makeText(context, "Actualizacion rechazada: la firma no coincide.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
         context.startActivity(intent)
+    }
+
+    /**
+     * True solo si [apkFile] esta firmado con exactamente el/los mismo(s)
+     * certificado(s) que la app instalada en el dispositivo. Fail-closed:
+     * ante cualquier error o diferencia devuelve false y no se instala.
+     */
+    private fun isSignedBySameCertAsInstalledApp(context: Context, apkFile: File): Boolean {
+        val pm = context.packageManager
+        val installed = certFingerprints(installedSignatures(pm, context.packageName))
+        val downloaded = certFingerprints(apkSignatures(pm, apkFile.absolutePath))
+        return installed.isNotEmpty() && installed == downloaded
+    }
+
+    private fun installedSignatures(pm: PackageManager, packageName: String): Array<Signature>? =
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val info = pm.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+                info.signingInfo?.let { if (it.hasMultipleSigners()) it.apkContentsSigners else it.signingCertificateHistory }
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES).signatures
+            }
+        } catch (e: Exception) {
+            null
+        }
+
+    private fun apkSignatures(pm: PackageManager, apkPath: String): Array<Signature>? =
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val info = pm.getPackageArchiveInfo(apkPath, PackageManager.GET_SIGNING_CERTIFICATES)
+                info?.signingInfo?.let { if (it.hasMultipleSigners()) it.apkContentsSigners else it.signingCertificateHistory }
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageArchiveInfo(apkPath, PackageManager.GET_SIGNATURES)?.signatures
+            }
+        } catch (e: Exception) {
+            null
+        }
+
+    private fun certFingerprints(signatures: Array<Signature>?): Set<String> {
+        if (signatures == null) return emptySet()
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        return signatures.map { sig ->
+            md.digest(sig.toByteArray()).joinToString("") { b -> "%02x".format(b) }
+        }.toSet()
     }
 }

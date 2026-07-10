@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Uh no había</string>
+    <string name="shortcut_add_product">Agregar producto</string>
+    <string name="shortcut_add_product_long">Agregar producto a mi lista de compras</string>
+    <string name="widget_description">Lista de compras con check de productos</string>
+</resources>

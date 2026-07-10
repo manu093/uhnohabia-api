@@ -1,0 +1,19 @@
+services:
+  # One-shot scraper: runs once and exits
+  scraper:
+    build: .
+    container_name: uhnohabia-scraper
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    restart: "no"
+
+  # Daily cron: runs scraper at 6AM Argentina time
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    container_name: uhnohabia-cron
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

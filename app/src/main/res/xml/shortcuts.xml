@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- App Action: "Agregá leche a mi lista de compras" -->
+    <capability android:name="actions.intent.CREATE_LIST_ITEM">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.sharedshoppinglists.app"
+            android:targetClass="com.sharedshoppinglists.app.presentation.MainActivity">
+            <parameter
+                android:name="listItem.name"
+                android:key="product_name" />
+            <parameter
+                android:name="list.name"
+                android:key="list_name" />
+        </intent>
+    </capability>
+
+    <!-- Shortcut for quick access -->
+    <shortcut
+        android:shortcutId="add_product"
+        android:shortcutShortLabel="@string/shortcut_add_product"
+        android:shortcutLongLabel="@string/shortcut_add_product_long"
+        android:icon="@mipmap/ic_launcher">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.sharedshoppinglists.app"
+            android:targetClass="com.sharedshoppinglists.app.presentation.MainActivity" />
+        <capability-binding android:key="actions.intent.CREATE_LIST_ITEM" />
+    </shortcut>
+
+</shortcuts>

@@ -1,0 +1,69 @@
+{
+  "actions": [
+    {
+      "description": "Acción predeterminada para la invocación principal de la app",
+      "name": "MAIN",
+      "fulfillment": {
+        "conversationName": "shared-shopping-lists"
+      },
+      "intent": {
+        "name": "actions.intent.MAIN",
+        "trigger": {
+          "queryPatterns": [
+            "Hablar con Lista de Compras",
+            "Abrir Lista de Compras"
+          ]
+        }
+      }
+    },
+    {
+      "description": "Agregar un producto a una lista de compras mediante comando de voz",
+      "name": "ADD_PRODUCT",
+      "fulfillment": {
+        "conversationName": "shared-shopping-lists"
+      },
+      "intent": {
+        "name": "AddProduct",
+        "trigger": {
+          "queryPatterns": [
+            "Agregar $product:product a mi lista $list:list",
+            "Agregar $product:product a la lista $list:list",
+            "Agregá $product:product a mi lista $list:list",
+            "Poné $product:product en la lista $list:list",
+            "Sumá $product:product a mi lista $list:list",
+            "Agregar $SchemaOrg_Number:quantity $unit:unit de $product:product a mi lista $list:list",
+            "Agregar $SchemaOrg_Number:quantity $product:product a mi lista $list:list",
+            "Agregar $product:product a mi lista",
+            "Agregar $product:product",
+            "Agregá $product:product"
+          ]
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "type": "SchemaOrg_Text"
+          },
+          {
+            "name": "list",
+            "type": "SchemaOrg_Text"
+          },
+          {
+            "name": "quantity",
+            "type": "SchemaOrg_Number"
+          },
+          {
+            "name": "unit",
+            "type": "SchemaOrg_Text"
+          }
+        ]
+      }
+    }
+  ],
+  "conversations": {
+    "shared-shopping-lists": {
+      "name": "shared-shopping-lists",
+      "url": "https://us-central1-shared-shopping-lists-dev.cloudfunctions.net/processGoogleAssistant"
+    }
+  },
+  "locale": "es"
+}

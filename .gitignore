@@ -1,6 +1,39 @@
-__pycache__/
-*.pyc
+# ===== Secretos / credenciales (NUNCA versionar) =====
 .env
 serviceAccountKey.json
+google-services.json
+*.jks
+*.keystore
+keystore.properties
+
+# ===== Android / Gradle =====
+*.iml
+.gradle/
+build/
+local.properties
+.cxx/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ===== IDE / editores =====
+.idea/
+.kiro/
+.vscode/
+
+# ===== Kotlin =====
+.kotlin/
+
+# ===== Python =====
+__pycache__/
+*.pyc
+*.pyo
 venv/
 .venv/
+*.egg-info/
+
+# ===== SO =====
+.DS_Store
+Thumbs.db
