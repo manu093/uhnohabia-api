@@ -148,6 +148,11 @@ fun ShoppingListDetailScreen(
                                     leadingIcon = { Icon(Icons.Default.Savings, contentDescription = null) }
                                 )
                                 DropdownMenuItem(
+                                    text = { Text("Comparar con mis precios") },
+                                    onClick = { showMenu = false; onManualComparator(listId) },
+                                    leadingIcon = { Icon(Icons.Default.Compare, contentDescription = null) }
+                                )
+                                DropdownMenuItem(
                                     text = { Text("Importar productos") },
                                     onClick = { showMenu = false; showImportDialog = true },
                                     leadingIcon = { Icon(Icons.Default.ContentPaste, contentDescription = null) }

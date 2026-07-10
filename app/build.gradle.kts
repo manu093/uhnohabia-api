@@ -26,8 +26,8 @@ android {
         applicationId = "com.sharedshoppinglists.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 22
-        versionName = "1.7.7"
+        versionCode = 23
+        versionName = "1.7.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -118,6 +118,7 @@ dependencies {
 
     // ML Kit Barcode Scanning
     implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.play.services.code.scanner)
 
     // Hilt
     implementation(libs.hilt.android)

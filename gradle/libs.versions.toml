@@ -21,6 +21,7 @@ junit5 = "5.11.4"
 coroutinesTest = "1.10.1"
 okhttp = "4.12.0"
 mlkitBarcodeScanning = "17.3.0"
+playServicesCodeScanner = "16.1.0"
 workManager = "2.10.0"
 coil = "2.7.0"
 
@@ -72,6 +73,7 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 
 # ML Kit Barcode Scanning
 mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcodeScanning" }
+play-services-code-scanner = { group = "com.google.android.gms", name = "play-services-code-scanner", version.ref = "playServicesCodeScanner" }
 
 # WorkManager
 androidx-work-runtime = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }

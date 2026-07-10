@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.CardMembership
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Loyalty
@@ -216,7 +217,8 @@ fun ShoppingListsScreen(
                     onSupermarkets = onMySupermarketsClick,
                     onBankPromos = onMyBankPromosClick,
                     onDiscountCards = onDiscountCardsClick,
-                    onBarcode = onBarcodeScannerClick
+                    onBarcode = onBarcodeScannerClick,
+                    onAffinityPrograms = onAffinityProgramsClick
                 )
                 Spacer(Modifier.height(8.dp))
             }
@@ -374,7 +376,8 @@ private fun QuickAccessRow(
     onSupermarkets: () -> Unit,
     onBankPromos: () -> Unit,
     onDiscountCards: () -> Unit,
-    onBarcode: () -> Unit
+    onBarcode: () -> Unit,
+    onAffinityPrograms: () -> Unit
 ) {
     val items = listOf(
         QuickAccess("Mis productos", Icons.Filled.Inventory2, onKnownProducts),
@@ -382,6 +385,7 @@ private fun QuickAccessRow(
         QuickAccess("Super", Icons.Filled.Store, onSupermarkets),
         QuickAccess("Promos banco", Icons.Filled.CreditCard, onBankPromos),
         QuickAccess("Tarjetas", Icons.Filled.Loyalty, onDiscountCards),
+        QuickAccess("Afinidad", Icons.Filled.CardMembership, onAffinityPrograms),
         QuickAccess("Escanear", Icons.Filled.QrCodeScanner, onBarcode)
     )
     LazyRow(
