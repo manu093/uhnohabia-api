@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +32,16 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Loyalty
+import androidx.compose.material.icons.filled.PostAdd
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -65,6 +76,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -96,6 +109,7 @@ fun ShoppingListsScreen(
     val lists by viewModel.shoppingLists.collectAsStateWithLifecycle()
     val pendingInvitations by viewModel.pendingInvitations.collectAsStateWithLifecycle()
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val catalogStatus by viewModel.catalogStatus.collectAsStateWithLifecycle()
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var listToDelete by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
     var listToRename by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
@@ -111,9 +125,9 @@ fun ShoppingListsScreen(
             Column(horizontalAlignment = Alignment.End) {
                 AnimatedVisibility(visible = fabExpanded, enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom), exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom)) {
                     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FabOption("\uD83D\uDCCB Nueva lista") { fabExpanded = false; showCreateDialog = true }
-                        FabOption("\u2B50 Producto recurrente") { fabExpanded = false; onKnownProductsClick() }
-                        FabOption("\uD83D\uDCC4 Duplicar lista") { fabExpanded = false; showDuplicateDialog = true }
+                        FabOption("Nueva lista", Icons.Filled.PostAdd) { fabExpanded = false; showCreateDialog = true }
+                        FabOption("Producto recurrente", Icons.Filled.Star) { fabExpanded = false; onKnownProductsClick() }
+                        FabOption("Duplicar lista", Icons.Filled.ContentCopy) { fabExpanded = false; showDuplicateDialog = true }
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -160,24 +174,43 @@ fun ShoppingListsScreen(
                             if (lists.isNotEmpty()) {
                                 Text("${lists.size} lista${if (lists.size > 1) "s" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                        }
-                        Row {
-                            IconButton(onClick = onGlobalSearchClick) { Text("\uD83D\uDD0D", fontSize = 18.sp) }
-                            IconButton(onClick = onPriceCatalogClick) { Text("\uD83D\uDCB0", fontSize = 18.sp) }
-                            IconButton(onClick = onPaymentMethodsClick) { Icon(Icons.Default.Settings, "Config", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp)) }
-                            Box {
-                                IconButton(onClick = { showMenu = !showMenu }) { Icon(Icons.Default.MoreVert, "Mas", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp)) }
-                                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                                    DropdownMenuItem(text = { Text("Categorias") }, onClick = { showMenu = false; onCategoryManagementClick() })
-                                    DropdownMenuItem(text = { Text("Mis Productos") }, onClick = { showMenu = false; onKnownProductsClick() })
-                                    DropdownMenuItem(text = { Text("Precios") }, onClick = { showMenu = false; onPriceCatalogClick() })
-                                    HorizontalDivider()
-                                    DropdownMenuItem(text = { Text("Cerrar Sesion") }, onClick = { showMenu = false; onLogout() })
+                            catalogStatus?.let { status ->
+                                if (status.lastRun.isNotBlank()) {
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        "\uD83D\uDD04 Precios actualizados: ${formatDbDate(status.lastRun)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    )
                                 }
+                            }
+                        }
+                        Box {
+                            IconButton(onClick = { showMenu = !showMenu }) { Icon(Icons.Default.MoreVert, "Más opciones", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp)) }
+                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Cerrar sesión") },
+                                    onClick = { showMenu = false; onLogout() },
+                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) }
+                                )
                             }
                         }
                     }
                 }
+            }
+
+            // Accesos rapidos a herramientas
+            item {
+                Spacer(Modifier.height(4.dp))
+                QuickAccessRow(
+                    onKnownProducts = onKnownProductsClick,
+                    onCategories = onCategoryManagementClick,
+                    onSupermarkets = onMySupermarketsClick,
+                    onBankPromos = onMyBankPromosClick,
+                    onDiscountCards = onDiscountCardsClick,
+                    onBarcode = onBarcodeScannerClick
+                )
+                Spacer(Modifier.height(8.dp))
             }
 
             // Notifications
@@ -311,9 +344,68 @@ private fun PendingInvitationsBanner(invitations: List<PendingInvitation>, onAcc
 }
 
 @Composable
-private fun FabOption(label: String, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
-        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+private fun FabOption(label: String, icon: ImageVector, onClick: () -> Unit) {
+    Surface(onClick = onClick, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
+        Row(
+            Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+private data class QuickAccess(val label: String, val icon: ImageVector, val onClick: () -> Unit)
+
+@Composable
+private fun QuickAccessRow(
+    onKnownProducts: () -> Unit,
+    onCategories: () -> Unit,
+    onSupermarkets: () -> Unit,
+    onBankPromos: () -> Unit,
+    onDiscountCards: () -> Unit,
+    onBarcode: () -> Unit
+) {
+    val items = listOf(
+        QuickAccess("Mis productos", Icons.Filled.Inventory2, onKnownProducts),
+        QuickAccess("Categorias", Icons.Filled.Category, onCategories),
+        QuickAccess("Super", Icons.Filled.Store, onSupermarkets),
+        QuickAccess("Promos banco", Icons.Filled.CreditCard, onBankPromos),
+        QuickAccess("Tarjetas", Icons.Filled.Loyalty, onDiscountCards),
+        QuickAccess("Escanear", Icons.Filled.QrCodeScanner, onBarcode)
+    )
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(items) { qa ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.width(64.dp)
+            ) {
+                Surface(
+                    onClick = qa.onClick,
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.size(54.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(qa.icon, contentDescription = qa.label, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    qa.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 13.sp
+                )
+            }
+        }
     }
 }
 
@@ -368,4 +460,14 @@ private fun EditEmojiDialog(currentEmoji: String, onDismiss: () -> Unit, onConfi
         },
         confirmButton = { TextButton(onClick = { onConfirm(selected) }) { Text("Guardar") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } })
+}
+
+// Formatea el timestamp de ultima actualizacion de la DB (ej: "2026-07-10 02:50:04.469426")
+// a "dd/MM/yyyy HH:mm". Muestra el valor tal cual lo reporta el backend (sin conversion de zona).
+private fun formatDbDate(raw: String): String = try {
+    val clean = raw.trim().replace(" ", "T").substringBefore(".")
+    java.time.LocalDateTime.parse(clean)
+        .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+} catch (_: Exception) {
+    raw.substringBefore(".").replace("T", " ").trim()
 }

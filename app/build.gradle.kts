@@ -26,8 +26,8 @@ android {
         applicationId = "com.sharedshoppinglists.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 18
-        versionName = "1.7.3"
+        versionCode = 20
+        versionName = "1.7.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     debugImplementation(libs.androidx.ui.tooling)
 
     // Navigation

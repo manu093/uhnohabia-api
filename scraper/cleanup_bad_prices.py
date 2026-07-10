@@ -1,6 +1,12 @@
 """One-time cleanup: remove Jumbo/Disco products with price < $500 (price-per-unit artifacts)."""
+import os
 import psycopg2
-cn = psycopg2.connect("${DATABASE_URL}")
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+if not DATABASE_URL:
+    raise SystemExit("DATABASE_URL not set")
+
+cn = psycopg2.connect(DATABASE_URL)
 cr = cn.cursor()
 cr.execute("DELETE FROM vtex_productos WHERE cadena IN ('Jumbo','Disco') AND precio < 500")
 print(f"Removed {cr.rowcount} bad Jumbo/Disco prices (< $500)")

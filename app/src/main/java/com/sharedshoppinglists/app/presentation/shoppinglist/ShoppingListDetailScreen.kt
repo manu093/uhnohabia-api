@@ -86,6 +86,7 @@ fun ShoppingListDetailScreen(
     var productToEdit by rememberSaveable { mutableStateOf<Product?>(null) }
     var showShareDialog by rememberSaveable { mutableStateOf(false) }
     var productToMove by rememberSaveable { mutableStateOf<Product?>(null) }
+    var showMenu by rememberSaveable { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
     val refreshScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -130,11 +131,34 @@ fun ShoppingListDetailScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { viewModel.uncheckAllProducts() }) { Text("\uD83D\uDD04", fontSize = 18.sp) }
-                        IconButton(onClick = { onShoppingMode(listId) }) { Text("\uD83D\uDED2", fontSize = 18.sp) }
-                        IconButton(onClick = { onOptimize(listId) }) { Text("\u2B50", fontSize = 18.sp) }
-                        IconButton(onClick = { showImportDialog = true }) { Text("\uD83D\uDCE5", fontSize = 18.sp) }
-                        IconButton(onClick = { showShareDialog = true }) { Text("\uD83D\uDD17", fontSize = 18.sp) }
+                        IconButton(onClick = { onShoppingMode(listId) }) {
+                            Icon(Icons.Default.ShoppingCart, contentDescription = "Modo compra")
+                        }
+                        IconButton(onClick = { showShareDialog = true }) {
+                            Icon(Icons.Default.Share, contentDescription = "Compartir")
+                        }
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                            }
+                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Optimizar precios") },
+                                    onClick = { showMenu = false; onOptimize(listId) },
+                                    leadingIcon = { Icon(Icons.Default.Savings, contentDescription = null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Importar productos") },
+                                    onClick = { showMenu = false; showImportDialog = true },
+                                    leadingIcon = { Icon(Icons.Default.ContentPaste, contentDescription = null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Desmarcar todo") },
+                                    onClick = { showMenu = false; viewModel.uncheckAllProducts() },
+                                    leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) }
+                                )
+                            }
+                        }
                     }
                 )
                 // Progress bar
@@ -160,7 +184,7 @@ fun ShoppingListDetailScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = CircleShape
                 ) {
-                    Text("\u2795", fontSize = 22.sp)
+                    Icon(Icons.Default.Add, contentDescription = "Agregar producto")
                 }
             }
         }

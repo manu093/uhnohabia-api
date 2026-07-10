@@ -2,6 +2,8 @@ package com.sharedshoppinglists.app.presentation.shoppinglist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sharedshoppinglists.app.data.remote.CatalogStatus
+import com.sharedshoppinglists.app.data.remote.SepaCatalogClient
 import com.sharedshoppinglists.app.domain.model.CustomCategory
 import com.sharedshoppinglists.app.domain.model.KnownProduct
 import com.sharedshoppinglists.app.domain.model.PendingInvitation
@@ -35,7 +37,8 @@ class ShoppingListViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val customCategoryRepository: CustomCategoryRepository,
     private val knownProductRepository: KnownProductRepository,
-    private val sharedListRepository: SharedListRepository
+    private val sharedListRepository: SharedListRepository,
+    private val sepaCatalogClient: SepaCatalogClient
 ) : ViewModel() {
 
     private val _currentUserId = MutableStateFlow<String?>(null)
@@ -53,6 +56,9 @@ class ShoppingListViewModel @Inject constructor(
     private val _notifications = MutableStateFlow<List<String>>(emptyList())
     val notifications: StateFlow<List<String>> = _notifications.asStateFlow()
 
+    private val _catalogStatus = MutableStateFlow<CatalogStatus?>(null)
+    val catalogStatus: StateFlow<CatalogStatus?> = _catalogStatus.asStateFlow()
+
     val shoppingLists: StateFlow<List<ShoppingList>> = _currentUserId
         .flatMapLatest { userId ->
             if (userId != null) shoppingListRepository.getLists(userId) else flowOf(emptyList())
@@ -69,6 +75,7 @@ class ShoppingListViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        loadCatalogStatus()
         viewModelScope.launch {
             authRepository.getCurrentUser().collect { user ->
                 _currentUserId.value = user?.id
@@ -84,6 +91,12 @@ class ShoppingListViewModel @Inject constructor(
                     _pendingInvitations.value = emptyList()
                 }
             }
+        }
+    }
+
+    private fun loadCatalogStatus() {
+        viewModelScope.launch {
+            _catalogStatus.value = sepaCatalogClient.getStatus()
         }
     }
 

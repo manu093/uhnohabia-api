@@ -26,6 +26,21 @@ import androidx.activity.enableEdgeToEdge
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavHostController
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.sharedshoppinglists.app.presentation.auth.AuthViewModel
 import com.sharedshoppinglists.app.presentation.navigation.AppNavigation
 import com.sharedshoppinglists.app.presentation.navigation.Screen
@@ -218,10 +233,62 @@ private fun MainContent(pendingProduct: String? = null) {
         Screen.Login.route
     }
 
-    AppNavigation(
-        navController = navController,
-        startDestination = startDestination,
-        pendingProduct = pendingProduct
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val bottomBarRoutes = remember {
+        setOf(
+            Screen.ShoppingLists.route,
+            Screen.PriceCatalog.route,
+            Screen.GlobalSearch.route,
+            Screen.Settings.route
+        )
+    }
+
+    Scaffold(
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        bottomBar = {
+            if (currentRoute in bottomBarRoutes) {
+                AppBottomBar(navController = navController, currentRoute = currentRoute)
+            }
+        }
+    ) { innerPadding ->
+        AppNavigation(
+            navController = navController,
+            startDestination = startDestination,
+            pendingProduct = pendingProduct,
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
+}
+
+private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
+
+@Composable
+private fun AppBottomBar(navController: NavHostController, currentRoute: String?) {
+    val tabs = listOf(
+        BottomTab(Screen.ShoppingLists.route, "Listas", Icons.Filled.Checklist),
+        BottomTab(Screen.PriceCatalog.route, "Precios", Icons.Filled.Payments),
+        BottomTab(Screen.GlobalSearch.route, "Buscar", Icons.Filled.Search),
+        BottomTab(Screen.Settings.route, "Ajustes", Icons.Filled.Settings)
     )
+    NavigationBar {
+        tabs.forEach { tab ->
+            NavigationBarItem(
+                selected = currentRoute == tab.route,
+                onClick = {
+                    if (currentRoute != tab.route) {
+                        navController.navigate(tab.route) {
+                            popUpTo(Screen.ShoppingLists.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                },
+                icon = { Icon(tab.icon, contentDescription = tab.label) },
+                label = { Text(tab.label) }
+            )
+        }
+    }
 }
 

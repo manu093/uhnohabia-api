@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +59,6 @@ fun VoiceInputButton(onResult: (String) -> Unit) {
         elevation = FloatingActionButtonDefaults.elevation(4.dp),
         modifier = Modifier.size(48.dp)
     ) {
-        Text("\uD83C\uDF99", style = MaterialTheme.typography.titleMedium)
+        Icon(Icons.Filled.Mic, contentDescription = "Agregar por voz")
     }
 }

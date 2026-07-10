@@ -82,7 +82,7 @@ fun AppearanceScreen(onBack: () -> Unit) {
     Scaffold(topBar = {
         TopAppBar(
             title = { Text("Apariencia", fontWeight = FontWeight.Bold) },
-            navigationIcon = { IconButton(onClick = onBack) { Text("\u2B05\uFE0F", fontSize = 18.sp) } },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver") } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
         )
     }) { padding ->

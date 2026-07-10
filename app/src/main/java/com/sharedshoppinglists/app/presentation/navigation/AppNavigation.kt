@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -42,8 +43,9 @@ import com.sharedshoppinglists.app.presentation.shoppinglist.ShoppingModeScreen
 import com.sharedshoppinglists.app.presentation.shoppinglist.ShoppingListsScreen
 
 @Composable
-fun AppNavigation(navController: NavHostController, startDestination: String, pendingProduct: String? = null) {
+fun AppNavigation(navController: NavHostController, startDestination: String, pendingProduct: String? = null, modifier: Modifier = Modifier) {
     NavHost(
+        modifier = modifier,
         navController = navController,
         startDestination = startDestination,
         enterTransition = { fadeIn(tween(300)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(300)) },
