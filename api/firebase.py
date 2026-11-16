@@ -17,6 +17,10 @@ try:
             firebase_admin.initialize_app(credentials.Certificate("serviceAccountKey.json"))
         elif os.environ.get("FIREBASE_SERVICE_ACCOUNT"):
             info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
+            # Si al pegar el JSON los saltos de linea quedaron doblemente escapados (una barra
+            # y una "n" literales), la firma del token es invalida: se corrigen aca.
+            if "\\n" in info.get("private_key", ""):
+                info["private_key"] = info["private_key"].replace("\\n", "\n")
             firebase_admin.initialize_app(credentials.Certificate(info))
         else:
             firebase_admin.initialize_app()

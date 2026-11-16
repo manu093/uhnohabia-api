@@ -186,3 +186,13 @@ def test_skill_id_check(client, store, monkeypatch):
     body = {"session": {"application": {"applicationId": "amzn1.ask.skill.otra"}},
             "request": {"type": "LaunchRequest"}}
     assert client.post("/voice/alexa", json=body).status_code == 403
+
+
+def test_firestore_hang_answers_before_alexa_timeout(client, store, monkeypatch):
+    import time as _t
+    monkeypatch.setattr(voice, "FIRESTORE_TIMEOUT_S", 0.3)
+    monkeypatch.setattr(store, "user_lists", lambda uid: _t.sleep(2) or [])
+    start = _t.monotonic()
+    resp = alexa(client, "ReadListIntent")
+    assert _t.monotonic() - start < 1.5
+    assert "tardando" in speech(resp) and resp["response"]["shouldEndSession"] is True

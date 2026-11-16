@@ -9,6 +9,8 @@ La lista elegida se recuerda durante la sesion (sessionAttributes).
 """
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException
@@ -26,6 +28,9 @@ router = APIRouter()
 ALEXA_SKILL_ID = os.environ.get("ALEXA_SKILL_ID", "")
 
 DEFAULT_LIST_NAME = "Mi Lista"
+# Alexa corta a los 8 s: si Firestore no responde a tiempo se avisa en vez de quedar mudo.
+FIRESTORE_TIMEOUT_S = 6.5
+_executor = ThreadPoolExecutor(max_workers=8)
 MAX_READ = 15
 
 HELP_TEXT = ("Podés dictarme varios productos juntos, por ejemplo: agregá dos leches, un kilo de papa y pan. "
@@ -164,6 +169,15 @@ def process_alexa_skill(body: dict):
 
     intent = req.get("intent", {})
     name = intent.get("name", "")
+    future = _executor.submit(_handle_intent, name, intent, uid, attrs, session_list)
+    try:
+        return future.result(timeout=FIRESTORE_TIMEOUT_S)
+    except FuturesTimeout:
+        log.error("Timeout de Firestore procesando %s de Alexa", name)
+        return alexa_response("La lista está tardando en responder. Probá de nuevo en un ratito.", True)
+
+
+def _handle_intent(name: str, intent: dict, uid: str, attrs: dict, session_list: dict | None) -> dict:
     store = _store()
     try:
         if name == "AddProductIntent":
