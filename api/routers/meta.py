@@ -1,8 +1,14 @@
 """Endpoints generales: salud, version para OTA y paginas legales."""
-from fastapi import APIRouter
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
+from typing import Optional
+
+from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from api.config import load_version
+from api.config import ADMIN_KEY, load_version, secret_matches
 
 router = APIRouter()
 
@@ -13,6 +19,33 @@ TERMS_HTML = "<html><head><meta charset=utf-8><meta name=viewport content=width=
 @router.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@router.get("/health/firestore")
+def health_firestore(x_admin_key: Optional[str] = Header(None)):
+    """Diagnostico: cuanto tarda una lectura minima de Firestore desde el servidor."""
+    if not ADMIN_KEY:
+        raise HTTPException(503, "Endpoint deshabilitado")
+    if not secret_matches(x_admin_key, ADMIN_KEY):
+        raise HTTPException(401, "Unauthorized")
+    from api import firebase as fb
+    if not fb.initialized:
+        return {"initialized": False}
+    out = {"initialized": True, "env": {k: os.environ.get(k) for k in ("GRPC_DNS_RESOLVER",)}}
+    pool = ThreadPoolExecutor(max_workers=1)
+    for step in ("primera", "segunda"):
+        start = time.monotonic()
+        fut = pool.submit(lambda: len(fb.db.collection("shoppingLists").limit(1).get()))
+        try:
+            fut.result(timeout=25)
+            out[step] = {"ms": round((time.monotonic() - start) * 1000)}
+        except FuturesTimeout:
+            out[step] = {"ms": None, "error": "timeout 25 s"}
+            break
+        except Exception as e:
+            out[step] = {"ms": round((time.monotonic() - start) * 1000), "error": f"{type(e).__name__}: {e}"[:300]}
+    pool.shutdown(wait=False)
+    return out
 
 
 @router.get("/app/version")
