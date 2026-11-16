@@ -1,5 +1,6 @@
 package com.sharedshoppinglists.app.presentation.shoppinglist
 
+import com.sharedshoppinglists.app.domain.classifier.ProductClassifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sharedshoppinglists.app.data.remote.CatalogStatus
@@ -326,15 +327,41 @@ class ShoppingListViewModel @Inject constructor(
     fun getFrequentProducts(): kotlinx.coroutines.flow.Flow<List<KnownProduct>> {
         return knownProductRepository.getMostUsed(10)
     }
-    fun importProducts(names: List<String>) {
+    /**
+     * Importa lineas pegadas (ej. de WhatsApp). Por cada una detecta cantidad/unidad y asigna
+     * categoria y emoji: primero segun el historial del usuario (productos conocidos) y si no,
+     * con el clasificador offline. Siempre usa una categoria real del usuario.
+     */
+    fun importProducts(lines: List<String>) {
         val listId = _selectedListId.value ?: return
+        val userId = _currentUserDisplayName.value.ifBlank { _currentUserId.value ?: "" }
         viewModelScope.launch {
-            names.forEach { name ->
-                shoppingListRepository.addProduct(listId, com.sharedshoppinglists.app.domain.model.Product(
-                    id = "", name = name, quantity = 1.0, unit = "Unidad",
-                    categoryName = "Otros", categoryEmoji = "\uD83D\uDCE6",
-                    isPurchased = false, lastModifiedBy = "", lastModifiedAt = java.time.Instant.now()
-                ))
+            val categories = try { customCategoryRepository.getAllOnce() } catch (_: Exception) { emptyList() }
+            fun categoryNamed(name: String) = categories.firstOrNull {
+                ProductClassifier.normalize(it.name) == ProductClassifier.normalize(name)
+            }
+            val fallback = categoryNamed(ProductClassifier.OTROS)
+
+            lines.mapNotNull { ProductClassifier.parseLine(it) }.forEach { item ->
+                val known = try {
+                    knownProductRepository.searchByName(item.name).firstOrNull {
+                        ProductClassifier.normalize(it.name) == ProductClassifier.normalize(item.name)
+                    }
+                } catch (_: Exception) { null }
+                val suggestion = ProductClassifier.classify(item.name)
+                val category = known?.categoryId?.takeIf { it.isNotBlank() }?.let { id -> categories.firstOrNull { it.id == id } }
+                    ?: suggestion?.let { categoryNamed(it.categoryName) }
+                    ?: fallback
+                val emoji = known?.emoji?.takeIf { it.isNotBlank() } ?: suggestion?.emoji ?: ""
+
+                shoppingListRepository.addProduct(listId, Product(
+                    id = "", name = item.name, quantity = item.quantity, unit = item.unit,
+                    categoryId = category?.id ?: "",
+                    categoryName = category?.name ?: ProductClassifier.OTROS,
+                    categoryEmoji = category?.emoji ?: "\uD83D\uDCE6",
+                    emoji = emoji,
+                    isPurchased = false, lastModifiedBy = userId, lastModifiedAt = Instant.now()
+                )).onFailure { _error.value = it.message ?: "No se pudo importar ${item.name}." }
             }
         }
     }
