@@ -5,9 +5,9 @@
         "es-AR": {
           "summary": "Agregá productos a tus listas de compras con la voz",
           "examplePhrases": [
-            "Alexa, abrí Lista de Compras",
-            "Alexa, decile a mi mercado leche",
-            "Alexa, decile a mi mercado azucar"
+            "Alexa, abrí mi mercado",
+            "Alexa, pedile a mi mercado que agregue leche y pan",
+            "Alexa, preguntale a mi mercado qué me falta"
           ],
           "keywords": [
             "lista de compras",
@@ -17,11 +17,11 @@
             "compartida"
           ],
           "name": "Lista de Compras Compartidas",
-          "description": "Usá Alexa para agregar productos a tus listas de compras compartidas. Podés decir \"Agregar leche a mi mercado del super\" y el producto se agrega automáticamente. Soporta múltiples productos, cantidades y unidades."
+          "description": "Dictale a Alexa lo que te falta y se agrega a tu lista de Uh no había, con categoría, emoji y cantidad. Podés decir varios productos juntos (\"dos leches, un kilo de papa y pan\"), preguntar qué te falta o sacar productos."
         }
       },
       "isAvailableWorldwide": false,
-      "testingInstructions": "1. Vincular cuenta con Firebase Auth. 2. Decir: Alexa, abrí Lista de Compras. 3. Decir: Agregar leche a mi mercado del super.",
+      "testingInstructions": "1. Vincular la cuenta con email y contraseña de Uh no había. 2. Decir: Alexa, abrí mi mercado. 3. Decir: dos leches, un kilo de papa y pan. 4. Decir: qué me falta.",
       "category": "SHOPPING",
       "distributionCountries": [
         "AR"

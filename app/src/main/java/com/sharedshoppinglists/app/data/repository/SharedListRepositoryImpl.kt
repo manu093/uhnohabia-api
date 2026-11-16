@@ -151,7 +151,13 @@ class SharedListRepositoryImpl @Inject constructor(
                     val doc = change.document
                     val productId = doc.id
                     val modifiedBy = doc.getString("lastModifiedBy") ?: ""
-                    val timestamp = doc.getLong("lastModifiedAt") ?: System.currentTimeMillis()
+                    // Puede ser Long (app) o Timestamp (productos viejos escritos por Alexa): getLong
+                    // lanza excepcion con un Timestamp, asi que se leen ambos formatos.
+                    val timestamp = when (val raw = doc.get("lastModifiedAt")) {
+                        is Number -> raw.toLong()
+                        is com.google.firebase.Timestamp -> raw.toDate().time
+                        else -> System.currentTimeMillis()
+                    }
 
                     val changeType = when (change.type) {
                         DocumentChange.Type.ADDED -> ChangeType.ADDED
