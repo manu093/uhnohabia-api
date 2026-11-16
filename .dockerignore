@@ -1,0 +1,26 @@
+# Solo el backend va a la imagen: nada de Android, scraper, tests ni secretos locales
+app/
+gradle/
+gradlew
+gradlew.bat
+*.gradle.kts
+gradle.properties
+local.properties
+alexa/
+assistant/
+scraper/
+tests/
+.git/
+.github/
+.gradle/
+.idea/
+.vscode/
+.kiro/
+**/__pycache__/
+*.pyc
+.env
+keystore.properties
+*.jks
+*.keystore
+CHANGELOG.md
+README.md

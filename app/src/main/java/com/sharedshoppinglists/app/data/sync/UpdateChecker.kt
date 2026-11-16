@@ -27,7 +27,7 @@ data class AppUpdate(
 )
 
 object UpdateChecker {
-    private const val BASE_URL = "https://colonial-albertine-pepin-5207cd9b.koyeb.app"
+    private val BASE_URL = com.sharedshoppinglists.app.BuildConfig.API_BASE_URL
 
     suspend fun checkForUpdate(context: Context): AppUpdate? = withContext(Dispatchers.IO) {
         try {

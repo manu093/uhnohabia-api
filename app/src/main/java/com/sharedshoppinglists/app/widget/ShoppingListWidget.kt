@@ -13,20 +13,32 @@ import com.sharedshoppinglists.app.presentation.MainActivity
 class ShoppingListWidget : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId)
+        runAsync {
+            for (appWidgetId in appWidgetIds) {
+                updateAppWidget(context, appWidgetManager, appWidgetId)
+            }
         }
+    }
+
+    /** Los broadcasts corren en el hilo principal: la DB se lee en otro hilo con goAsync(). */
+    private fun runAsync(block: () -> Unit) {
+        val pending = goAsync()
+        Thread {
+            try { block() } finally { pending.finish() }
+        }.start()
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == ACTION_TOGGLE) {
             val productId = intent.getStringExtra("product_id") ?: return
-            WidgetDataHelper.toggleProduct(context, productId)
-            // Refresh all widgets
-            val mgr = AppWidgetManager.getInstance(context)
-            val ids = mgr.getAppWidgetIds(android.content.ComponentName(context, ShoppingListWidget::class.java))
-            mgr.notifyAppWidgetViewDataChanged(ids, R.id.widget_list)
+            runAsync {
+                WidgetDataHelper.toggleProduct(context, productId)
+                // Refresh all widgets (titulo con contador y lista)
+                val mgr = AppWidgetManager.getInstance(context)
+                val ids = mgr.getAppWidgetIds(android.content.ComponentName(context, ShoppingListWidget::class.java))
+                ids.forEach { updateAppWidget(context, mgr, it) }
+            }
         }
     }
 
@@ -40,6 +52,7 @@ class ShoppingListWidget : AppWidgetProvider() {
     companion object {
         const val ACTION_TOGGLE = "com.sharedshoppinglists.app.TOGGLE_PRODUCT"
 
+        /** Lee la DB: llamar siempre desde un hilo de fondo. */
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val views = RemoteViews(context.packageName, R.layout.widget_shopping_list)
 

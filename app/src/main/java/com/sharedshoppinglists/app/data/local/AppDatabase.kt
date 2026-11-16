@@ -45,7 +45,7 @@ import java.util.UUID
         SavingsEntity::class
     ],
     version = 8,
-    exportSchema = false
+    exportSchema = true // esquemas en app/schemas/: permiten testear migraciones futuras
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun shoppingListDao(): ShoppingListDao
@@ -168,8 +168,10 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "shopping_lists_db")
                     .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .addCallback(prepopulateCallback())
-                    .allowMainThreadQueries()
-                    .fallbackToDestructiveMigration()
+                    // Solo se recrea la DB desde versiones viejas sin migracion (1 y 2). Para cualquier
+                    // otra version, si falta una migracion la app falla en desarrollo en lugar de
+                    // borrar en silencio las listas del usuario.
+                    .fallbackToDestructiveMigrationFrom(true, 1, 2)
                     .build().also { INSTANCE = it }
             }
         }

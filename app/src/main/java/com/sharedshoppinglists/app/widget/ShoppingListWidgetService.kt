@@ -20,7 +20,7 @@ class ShoppingListRemoteViewsFactory(
 ) : RemoteViewsService.RemoteViewsFactory {
     private var items = listOf<WidgetProduct>()
 
-    override fun onCreate() { loadData() }
+    override fun onCreate() {} // la carga se hace en onDataSetChanged (hilo de fondo)
     override fun onDataSetChanged() { loadData() }
     override fun onDestroy() {}
     override fun getCount() = items.size

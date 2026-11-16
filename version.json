@@ -1,0 +1,6 @@
+{
+  "versionCode": 24,
+  "versionName": "1.7.9",
+  "releaseNotes": "Arreglado el modo oscuro automatico (activa el tema oscuro de noche) y mejoras internas de navegacion.",
+  "forceUpdate": false
+}

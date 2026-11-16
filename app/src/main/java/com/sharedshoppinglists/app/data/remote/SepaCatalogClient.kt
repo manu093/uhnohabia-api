@@ -56,7 +56,7 @@ class SepaCatalogClientImpl @Inject constructor(
     private val httpClient: OkHttpClient
 ) : SepaCatalogClient {
 
-    private val baseUrl = "https://colonial-albertine-pepin-5207cd9b.koyeb.app"
+    private val baseUrl = com.sharedshoppinglists.app.BuildConfig.API_BASE_URL
 
     private fun get(url: String): String? = try {
         val req = Request.Builder().url(url).header("User-Agent", "UhNoHabia-Android/1.0").build()

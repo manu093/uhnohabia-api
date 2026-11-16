@@ -47,9 +47,12 @@ class WidgetConfigActivity : ComponentActivity() {
                 WidgetConfigScreen(
                     onListSelected = { listId, listName ->
                         saveWidgetConfig(this, appWidgetId, listId, listName)
-                        // Update the widget
-                        val appWidgetManager = AppWidgetManager.getInstance(this)
-                        ShoppingListWidget.updateAppWidget(this, appWidgetManager, appWidgetId)
+                        // Update the widget (lee la DB: fuera del hilo principal)
+                        val appContext = applicationContext
+                        val widgetId = appWidgetId
+                        Thread {
+                            ShoppingListWidget.updateAppWidget(appContext, AppWidgetManager.getInstance(appContext), widgetId)
+                        }.start()
                         // Return OK
                         val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                         setResult(Activity.RESULT_OK, resultValue)
@@ -99,11 +102,10 @@ private fun WidgetConfigScreen(
     onCancel: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val lists = remember {
-        try {
-            val db = AppDatabase.getInstance(context)
-            db.shoppingListDao().getAllSync()
-        } catch (_: Exception) { emptyList() }
+    val lists by produceState(initialValue = emptyList<com.sharedshoppinglists.app.data.local.entity.ShoppingListEntity>()) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try { AppDatabase.getInstance(context).shoppingListDao().getAllSync() } catch (_: Exception) { emptyList() }
+        }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {

@@ -1,3 +1,4 @@
+import groovy.json.JsonSlurper
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -18,6 +19,14 @@ val keystoreProperties = Properties().apply {
     }
 }
 
+// Version unica compartida con el backend (/app/version lee el mismo archivo).
+@Suppress("UNCHECKED_CAST")
+val appVersion = JsonSlurper().parse(rootProject.file("version.json")) as Map<String, Any>
+
+// URL del backend; se puede sobreescribir con -PapiBaseUrl=... o en gradle.properties.
+val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?)
+    ?: "https://colonial-albertine-pepin-5207cd9b.koyeb.app"
+
 android {
     namespace = "com.sharedshoppinglists.app"
     compileSdk = 35
@@ -26,8 +35,10 @@ android {
         applicationId = "com.sharedshoppinglists.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 24
-        versionName = "1.7.9"
+        versionCode = (appVersion["versionCode"] as Number).toInt()
+        versionName = appVersion["versionName"] as String
+
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -69,7 +80,12 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 tasks.withType<Test> {
