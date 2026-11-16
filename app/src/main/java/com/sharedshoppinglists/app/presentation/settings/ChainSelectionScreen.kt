@@ -31,7 +31,7 @@ fun ChainSelectionScreen(onBack: () -> Unit) {
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             try {
-                val url = java.net.URL("https://colonial-albertine-pepin-5207cd9b.koyeb.app/catalog/cadenas")
+                val url = java.net.URL("${com.sharedshoppinglists.app.BuildConfig.API_BASE_URL}/catalog/cadenas")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.connectTimeout = 10000; conn.readTimeout = 10000
                 val json = conn.inputStream.bufferedReader().readText()

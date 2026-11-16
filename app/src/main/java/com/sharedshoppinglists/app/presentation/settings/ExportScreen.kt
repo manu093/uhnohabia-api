@@ -18,13 +18,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sharedshoppinglists.app.data.local.AppDatabase
 import com.sharedshoppinglists.app.data.local.ListExportHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val lists = remember {
-        try { AppDatabase.getInstance(context).shoppingListDao().getAllSync() } catch (_: Exception) { emptyList() }
+    val scope = rememberCoroutineScope()
+    val lists by produceState(initialValue = emptyList<com.sharedshoppinglists.app.data.local.entity.ShoppingListEntity>()) {
+        value = withContext(Dispatchers.IO) {
+            try { AppDatabase.getInstance(context).shoppingListDao().getAllSync() } catch (_: Exception) { emptyList() }
+        }
+    }
+
+    // Lee los productos en IO y exporta en el hilo principal (abre el selector de compartir).
+    fun export(listId: String, listName: String, asCsv: Boolean) {
+        scope.launch {
+            val products = withContext(Dispatchers.IO) {
+                AppDatabase.getInstance(context).productDao().getByListIdSync(listId)
+            }
+            val exportProducts = products.map { p ->
+                ListExportHelper.ExportProduct(p.name, p.emoji.ifBlank { p.categoryEmoji }, p.quantity, p.unit, p.categoryName, p.isPurchased)
+            }
+            if (asCsv) ListExportHelper.exportAsCsv(context, listName, exportProducts)
+            else ListExportHelper.exportAsText(context, listName, exportProducts)
+        }
     }
 
     Scaffold(topBar = {
@@ -71,13 +91,7 @@ fun ExportScreen(onBack: () -> Unit) {
                             Spacer(Modifier.height(12.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 FilledTonalButton(
-                                    onClick = {
-                                        val products = AppDatabase.getInstance(context).productDao().getByListIdSync(list.id)
-                                        val exportProducts = products.map { p ->
-                                            ListExportHelper.ExportProduct(p.name, p.emoji.ifBlank { p.categoryEmoji }, p.quantity, p.unit, p.categoryName, p.isPurchased)
-                                        }
-                                        ListExportHelper.exportAsText(context, list.name, exportProducts)
-                                    },
+                                    onClick = { export(list.id, list.name, asCsv = false) },
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(Icons.Default.Share, "Texto", modifier = Modifier.size(16.dp))
@@ -85,13 +99,7 @@ fun ExportScreen(onBack: () -> Unit) {
                                     Text("Texto")
                                 }
                                 OutlinedButton(
-                                    onClick = {
-                                        val products = AppDatabase.getInstance(context).productDao().getByListIdSync(list.id)
-                                        val exportProducts = products.map { p ->
-                                            ListExportHelper.ExportProduct(p.name, p.emoji.ifBlank { p.categoryEmoji }, p.quantity, p.unit, p.categoryName, p.isPurchased)
-                                        }
-                                        ListExportHelper.exportAsCsv(context, list.name, exportProducts)
-                                    },
+                                    onClick = { export(list.id, list.name, asCsv = true) },
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text("CSV")
