@@ -1,5 +1,7 @@
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1
+# gRPC (Firestore) se colgaba en Koyeb con el resolver DNS por defecto (c-ares)
+ENV GRPC_DNS_RESOLVER=native
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

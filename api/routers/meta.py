@@ -45,6 +45,20 @@ def health_firestore(x_admin_key: Optional[str] = Header(None)):
         except Exception as e:
             out[step] = {"ms": round((time.monotonic() - start) * 1000), "error": f"{type(e).__name__}: {e}"[:300]}
     pool.shutdown(wait=False)
+    # Misma lectura por la API REST (HTTPS comun, sin gRPC)
+    try:
+        import firebase_admin
+        import httpx
+        start = time.monotonic()
+        app = firebase_admin.get_app()
+        token = app.credential.get_access_token().access_token
+        out["token_ms"] = round((time.monotonic() - start) * 1000)
+        start = time.monotonic()
+        r = httpx.get(f"https://firestore.googleapis.com/v1/projects/{app.project_id}/databases/(default)/documents/"
+                      "shoppingLists", params={"pageSize": 1}, headers={"Authorization": f"Bearer {token}"}, timeout=20)
+        out["rest"] = {"ms": round((time.monotonic() - start) * 1000), "status": r.status_code}
+    except Exception as e:
+        out["rest"] = {"error": f"{type(e).__name__}: {e}"[:300]}
     return out
 
 
