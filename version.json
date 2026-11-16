@@ -1,6 +1,6 @@
 {
-  "versionCode": 24,
-  "versionName": "1.7.9",
-  "releaseNotes": "Arreglado el modo oscuro automatico (activa el tema oscuro de noche) y mejoras internas de navegacion.",
+  "versionCode": 25,
+  "versionName": "1.8.0",
+  "releaseNotes": "Importar lista mejorado: al pegar una lista (por ejemplo de WhatsApp) cada producto queda con su categoria, emoji y cantidad automaticamente. Ademas, mejoras de estabilidad y seguridad.",
   "forceUpdate": false
 }

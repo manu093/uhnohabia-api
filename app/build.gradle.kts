@@ -82,6 +82,12 @@ android {
         compose = true
         buildConfig = true
     }
+
+    lint {
+        // El detector de lifecycle 2.9 crashea con el analizador de Kotlin de AGP 8.7
+        // ("KaCallableMemberCall, but interface was expected"). La app no usa MutableLiveData.
+        disable += "NullSafeMutableLiveData"
+    }
 }
 
 ksp {
