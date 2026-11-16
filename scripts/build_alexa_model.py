@@ -16,7 +16,10 @@ INVOCATION = "mi mercado"
 ADD_VERBS = ["agregá", "agrega", "agregar", "agregame", "anotá", "anota", "anotame", "sumá", "suma", "sumame",
              "poné", "pone", "poneme", "añadí", "añade", "necesito", "quiero", "comprar", "hay que comprar",
              "falta", "faltan", "me falta", "me faltan", "se terminó", "se terminaron", "se acabó", "traer",
-             "acordate de", "acordate de comprar", "no te olvides de"]
+             "acordate de", "acordate de comprar", "no te olvides de",
+             # frases de un solo paso: "Alexa, pedile a mi mercado que agregue leche"
+             "que agregue", "que agregues", "que anote", "que anotes", "que sume", "que sumes", "que ponga",
+             "que pongas", "agregue", "anote", "sume", "ponga"]
 ADD_TO_LIST = ["agregá {product} a la lista {listName}", "agregá {product} a la lista de {listName}",
                "anotá {product} en la lista {listName}", "anotá {product} en la lista de {listName}",
                "poné {product} en la lista {listName}", "sumá {product} a la lista {listName}",
@@ -27,11 +30,13 @@ READ = ["qué hay en la lista", "qué hay en mi lista", "qué tengo en la lista"
         "leeme la lista", "leé la lista", "lee la lista", "decime la lista", "decime qué hay en la lista",
         "qué me falta", "qué me falta comprar", "qué falta comprar", "qué tengo que comprar",
         "qué hay que comprar", "repasame la lista", "qué anoté",
+        "que me lea la lista", "que me leas la lista", "que me diga qué falta", "que me digas qué falta",
         "qué hay en la lista {listName}", "qué hay en la lista de {listName}", "leeme la lista {listName}",
         "leeme la lista de {listName}", "qué falta en la lista {listName}", "qué me falta de {listName}"]
 
 REMOVE_VERBS = ["sacá", "saca", "sacame", "borrá", "borra", "borrame", "quitá", "quita", "eliminá", "elimina",
-                "tachá", "tacha", "ya no necesito", "no hace falta"]
+                "tachá", "tacha", "ya no necesito", "no hace falta",
+                "que saque", "que saques", "que borre", "que borres", "que quite", "que quites"]
 REMOVE_FROM_LIST = ["sacá {product} de la lista {listName}", "borrá {product} de la lista {listName}",
                     "quitá {product} de la lista {listName}", "sacá {product} de la lista de {listName}"]
 
