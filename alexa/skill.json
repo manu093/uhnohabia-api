@@ -5,9 +5,9 @@
         "es-AR": {
           "summary": "Agregá productos a tus listas de compras con la voz",
           "examplePhrases": [
-            "Alexa, abrí mi mercado",
-            "Alexa, pedile a mi mercado que agregue leche y pan",
-            "Alexa, preguntale a mi mercado qué me falta"
+            "Alexa, abrí mi super",
+            "Alexa, pedile a mi super que agregue leche y pan",
+            "Alexa, preguntale a mi super qué me falta"
           ],
           "keywords": [
             "lista de compras",
@@ -21,7 +21,7 @@
         }
       },
       "isAvailableWorldwide": false,
-      "testingInstructions": "1. Vincular la cuenta con email y contraseña de Uh no había. 2. Decir: Alexa, abrí mi mercado. 3. Decir: dos leches, un kilo de papa y pan. 4. Decir: qué me falta.",
+      "testingInstructions": "1. Vincular la cuenta con email y contraseña de Uh no había. 2. Decir: Alexa, abrí mi super. 3. Decir: dos leches, un kilo de papa y pan. 4. Decir: qué me falta.",
       "category": "SHOPPING",
       "distributionCountries": [
         "AR"

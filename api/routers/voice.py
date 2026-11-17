@@ -4,6 +4,8 @@ Alexa (invocacion "mi mercado"):
   - AddProductIntent     "agregá dos leches pan y huevos [a la lista super]"
   - ReadListIntent       "qué hay en la lista" / "qué me falta"
   - RemoveProductIntent  "sacá la leche"
+  - SelectListIntent     "usá la lista farmacia" (queda guardada para las proximas veces)
+  - ListListsIntent      "qué listas tengo"
   - Help / Yes / No / Stop / Cancel / Fallback / NavigateHome, SessionEndedRequest
 La lista elegida se recuerda durante la sesion (sessionAttributes).
 """
@@ -34,7 +36,8 @@ _executor = ThreadPoolExecutor(max_workers=8)
 MAX_READ = 15
 
 HELP_TEXT = ("Podés dictarme varios productos juntos, por ejemplo: agregá dos leches, un kilo de papa y pan. "
-             "También podés decir: qué hay en la lista, o sacá la leche. ¿Qué querés agregar?")
+             "También podés decir: qué me falta, sacá la leche, qué listas tengo, o usá la lista farmacia. "
+             "¿Qué querés agregar?")
 
 
 def _store() -> FirestoreVoiceStore:
@@ -44,7 +47,8 @@ def _store() -> FirestoreVoiceStore:
 # --- Acciones (compartidas por Alexa y Google) -------------------------------------------
 
 def _pick_list(store, uid: str, requested: str | None, session_list: dict | None):
-    """Devuelve (lista, aviso). Prioridad: lista pedida > lista de la sesion > la ultima usada."""
+    """Devuelve (lista, aviso). Prioridad: lista pedida > lista de la sesion > lista elegida
+    con "usá la lista X" > la ultima usada."""
     lists = store.user_lists(uid)
     if requested:
         found = find_list(lists, requested)
@@ -53,8 +57,8 @@ def _pick_list(store, uid: str, requested: str | None, session_list: dict | None
         note = f"No encontré la lista {requested}. "
     else:
         note = ""
-    if session_list:
-        found = next((l for l in lists if l.id == session_list.get("id")), None)
+    for wanted_id in ((session_list or {}).get("id"), store.default_list_id(uid)):
+        found = next((l for l in lists if l.id == wanted_id), None) if wanted_id else None
         if found:
             return found, note
     if lists:
@@ -111,6 +115,30 @@ def remove_products(store, uid: str, text: str, list_name: str | None = None, se
     if missing:
         parts.append(f"No encontré {join_es(missing)} en {lst.name}.")
     return lst, note + " ".join(parts)
+
+
+def list_names(store, uid: str) -> str:
+    lists = store.user_lists(uid)
+    if not lists:
+        return "No tenés listas todavía. Si me decís un producto, creo una."
+    names = join_es([l.name for l in lists])
+    current = store.default_list_id(uid)
+    cur = next((l.name for l in lists if l.id == current), None)
+    extra = f" Ahora estoy usando {cur}." if cur else ""
+    return f"Tenés {len(lists)} {'lista' if len(lists) == 1 else 'listas'}: {names}.{extra}"
+
+
+def select_list(store, uid: str, requested: str | None):
+    """Elige la lista por defecto para Alexa. Devuelve (lista o None, mensaje)."""
+    lists = store.user_lists(uid)
+    if not requested:
+        return None, f"¿Qué lista querés usar? {list_names(store, uid)}"
+    found = find_list(lists, requested)
+    if not found:
+        names = join_es([l.name for l in lists]) if lists else "ninguna"
+        return None, f"No encontré la lista {requested}. Tus listas son: {names}."
+    store.set_default_list(uid, found.id)
+    return found, f"Listo, desde ahora uso la lista {found.name}."
 
 
 # --- Alexa --------------------------------------------------------------------------------
@@ -208,6 +236,18 @@ def _handle_intent(name: str, intent: dict, uid: str, attrs: dict, session_list:
             if lst:
                 attrs["list"] = {"id": lst.id, "name": lst.name}
             return alexa_response(f"{msg} ¿Algo más?", False, reprompt="¿Querés hacer algo más?", attributes=attrs)
+
+        if name == "SelectListIntent":
+            lst, msg = select_list(store, uid, _slot(intent, "listName"))
+            if lst:
+                attrs["list"] = {"id": lst.id, "name": lst.name}
+                return alexa_response(f"{msg} ¿Qué querés agregar?", False, reprompt="¿Qué querés agregar?",
+                                      attributes=attrs)
+            return alexa_response(msg, False, reprompt="Decime el nombre de la lista.", attributes=attrs)
+
+        if name == "ListListsIntent":
+            return alexa_response(f"{list_names(store, uid)} ¿Cuál querés usar?", False,
+                                  reprompt="Podés decir: usá la lista, y el nombre.", attributes=attrs)
 
         if name == "AMAZON.HelpIntent":
             return alexa_response(HELP_TEXT, False, reprompt="¿Qué querés agregar?", attributes=attrs)

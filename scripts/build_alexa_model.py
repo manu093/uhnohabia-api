@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DICT = ROOT / "api/product_dictionary.json"
 OUT = ROOT / "alexa/interactionModel.json"
 
-INVOCATION = "mi mercado"
+INVOCATION = "mi super"  # "abrir super" no se permite: "abrir" es palabra de arranque
 
 ADD_VERBS = ["agregá", "agrega", "agregar", "agregame", "anotá", "anota", "anotame", "sumá", "suma", "sumame",
              "poné", "pone", "poneme", "añadí", "añade", "necesito", "quiero", "comprar", "hay que comprar",
@@ -40,6 +40,16 @@ REMOVE_VERBS = ["sacá", "saca", "sacame", "borrá", "borra", "borrame", "quitá
 REMOVE_FROM_LIST = ["sacá {product} de la lista {listName}", "borrá {product} de la lista {listName}",
                     "quitá {product} de la lista {listName}", "sacá {product} de la lista de {listName}"]
 
+SELECT = ["usá la lista {listName}", "usa la lista {listName}", "usar la lista {listName}",
+          "cambiá a la lista {listName}", "cambia a la lista {listName}", "cambiá la lista a {listName}",
+          "elegí la lista {listName}", "elige la lista {listName}", "quiero usar la lista {listName}",
+          "trabajá con la lista {listName}", "andá a la lista {listName}", "abrí la lista {listName}",
+          "pasá a la lista {listName}", "que use la lista {listName}", "usá la lista de {listName}",
+          "cambiá a la lista de {listName}", "cambiar de lista", "cambiá de lista", "elegir lista",
+          "usá otra lista", "quiero cambiar de lista"]
+LIST_LISTS = ["qué listas tengo", "cuáles son mis listas", "decime mis listas", "qué listas hay", "mis listas",
+              "que me diga mis listas", "qué listas tengo creadas", "en qué lista estoy", "qué lista estás usando"]
+
 # Ejemplos de frases completas: ayudan a que Alexa capture varios productos y cantidades juntos
 MULTI_EXAMPLES = [
     "leche pan y huevos", "dos leches", "un kilo de papa", "medio kilo de queso", "una docena de huevos",
@@ -50,7 +60,8 @@ MULTI_EXAMPLES = [
 ]
 
 LIST_NAMES = ["super", "supermercado", "compras", "compras del mes", "mercado", "verdulería", "farmacia",
-              "carnicería", "casa", "la semana", "mi lista", "fiesta", "asado", "oficina", "chino", "almacén"]
+              "carnicería", "casa", "la semana", "mi lista", "fiesta", "asado", "oficina", "chino", "almacén", "prueba",
+              "limpieza", "cumpleaños", "vacaciones", "regalos", "mayorista", "kiosco"]
 
 
 def build() -> dict:
@@ -86,6 +97,9 @@ def build() -> dict:
                     {"name": "RemoveProductIntent",
                      "slots": [{"name": "product", "type": "PRODUCT_NAME"}, {"name": "listName", "type": "LIST_NAME"}],
                      "samples": remove_samples},
+                    {"name": "SelectListIntent", "slots": [{"name": "listName", "type": "LIST_NAME"}],
+                     "samples": SELECT},
+                    {"name": "ListListsIntent", "samples": LIST_LISTS},
                     {"name": "AMAZON.HelpIntent", "samples": ["ayuda", "qué puedo decir", "cómo funciona", "cómo se usa"]},
                     {"name": "AMAZON.StopIntent", "samples": ["nada más", "eso es todo", "listo", "chau", "ya está",
                                                               "terminé", "nada más gracias"]},

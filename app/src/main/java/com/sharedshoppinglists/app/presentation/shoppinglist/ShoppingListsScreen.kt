@@ -260,7 +260,12 @@ fun ShoppingListsScreen(
         AddEditListDialog(onDismiss = { showCreateDialog = false }, onConfirm = { name -> viewModel.createList(name); showCreateDialog = false }, onConfirmWithEmoji = { name, emoji -> viewModel.createList(name, emoji); showCreateDialog = false })
     }
     listToDelete?.let { list ->
-        AlertDialog(onDismissRequest = { listToDelete = null }, title = { Text("Eliminar lista") }, text = { Text("Seguro que queres eliminar \"${list.name}\"?") },
+        AlertDialog(onDismissRequest = { listToDelete = null }, title = { Text("Eliminar lista") }, text = {
+                Text(
+                    if (list.isShared) "¿Seguro que querés eliminar \"${list.name}\"? Como es compartida, vas a salir de la lista y los demás la van a seguir teniendo."
+                    else "¿Seguro que querés eliminar \"${list.name}\" y todos sus productos?"
+                )
+            },
             confirmButton = { TextButton(onClick = { viewModel.deleteList(list.id); listToDelete = null }) { Text("Eliminar", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { listToDelete = null }) { Text("Cancelar") } })
     }
@@ -325,8 +330,29 @@ private fun ListCard(list: ShoppingList, onClick: () -> Unit, onDelete: () -> Un
                 }
             }
 
-            // Arrow
-            Text("\u203A", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+            // Menu de opciones de la lista
+            var showMenu by remember { mutableStateOf(false) }
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Opciones de ${list.name}",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Renombrar") },
+                        onClick = { showMenu = false; onRename() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Cambiar \u00EDcono") },
+                        onClick = { showMenu = false; onEditEmoji() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                        onClick = { showMenu = false; onDelete() }
+                    )
+                }
+            }
         }
     }
 }

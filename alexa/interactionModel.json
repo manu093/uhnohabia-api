@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "mi mercado",
+      "invocationName": "mi super",
       "intents": [
         {
           "name": "AddProductIntent",
@@ -164,6 +164,52 @@
             "borrá {product} de la lista {listName}",
             "quitá {product} de la lista {listName}",
             "sacá {product} de la lista de {listName}"
+          ]
+        },
+        {
+          "name": "SelectListIntent",
+          "slots": [
+            {
+              "name": "listName",
+              "type": "LIST_NAME"
+            }
+          ],
+          "samples": [
+            "usá la lista {listName}",
+            "usa la lista {listName}",
+            "usar la lista {listName}",
+            "cambiá a la lista {listName}",
+            "cambia a la lista {listName}",
+            "cambiá la lista a {listName}",
+            "elegí la lista {listName}",
+            "elige la lista {listName}",
+            "quiero usar la lista {listName}",
+            "trabajá con la lista {listName}",
+            "andá a la lista {listName}",
+            "abrí la lista {listName}",
+            "pasá a la lista {listName}",
+            "que use la lista {listName}",
+            "usá la lista de {listName}",
+            "cambiá a la lista de {listName}",
+            "cambiar de lista",
+            "cambiá de lista",
+            "elegir lista",
+            "usá otra lista",
+            "quiero cambiar de lista"
+          ]
+        },
+        {
+          "name": "ListListsIntent",
+          "samples": [
+            "qué listas tengo",
+            "cuáles son mis listas",
+            "decime mis listas",
+            "qué listas hay",
+            "mis listas",
+            "que me diga mis listas",
+            "qué listas tengo creadas",
+            "en qué lista estoy",
+            "qué lista estás usando"
           ]
         },
         {
@@ -2932,6 +2978,41 @@
             {
               "name": {
                 "value": "almacén"
+              }
+            },
+            {
+              "name": {
+                "value": "prueba"
+              }
+            },
+            {
+              "name": {
+                "value": "limpieza"
+              }
+            },
+            {
+              "name": {
+                "value": "cumpleaños"
+              }
+            },
+            {
+              "name": {
+                "value": "vacaciones"
+              }
+            },
+            {
+              "name": {
+                "value": "regalos"
+              }
+            },
+            {
+              "name": {
+                "value": "mayorista"
+              }
+            },
+            {
+              "name": {
+                "value": "kiosco"
               }
             }
           ]

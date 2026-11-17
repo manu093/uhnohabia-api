@@ -21,6 +21,7 @@ class FakeStore:
         )
         self.writes = []
         self._n = 0
+        self.default = None
 
     def user_lists(self, uid):
         return sorted(self.lists, key=lambda l: -l.updated_at)
@@ -37,6 +38,12 @@ class FakeStore:
 
     def user_context(self, uid):
         return self.ctx
+
+    def default_list_id(self, uid):
+        return self.default
+
+    def set_default_list(self, uid, list_id):
+        self.default = list_id
 
     def apply(self, list_id, adds, updates, deletes):
         self.writes.append((list_id, adds, updates, deletes))
@@ -208,3 +215,35 @@ def test_leading_number_comes_in_quantity_slot(client, store):
 def test_quantity_not_duplicated_when_text_has_number(client, store):
     alexa(client, "AddProductIntent", {"product": "3 leches", "quantity": "3"})
     assert store.items["l1"][0]["quantity"] == 3.0
+
+
+def test_select_list_is_remembered_in_new_sessions(client, store):
+    resp = alexa(client, "SelectListIntent", {"listName": "la farmacia"})
+    assert speech(resp).startswith("Listo, desde ahora uso la lista Farmacia.")
+    assert store.default == "l2"
+    # sesion nueva, sin atributos: igual usa Farmacia aunque Super sea la mas reciente
+    resp2 = alexa(client, "AddProductIntent", {"product": "ibuprofeno"})
+    assert "a Farmacia" in speech(resp2)
+
+
+def test_select_unknown_list_lists_options(client, store):
+    resp = alexa(client, "SelectListIntent", {"listName": "ferretería"})
+    assert speech(resp) == "No encontré la lista ferretería. Tus listas son: super y farmacia."
+    assert store.default is None and resp["response"]["shouldEndSession"] is False
+
+
+def test_select_without_name_asks(client, store):
+    resp = alexa(client, "SelectListIntent")
+    assert speech(resp).startswith("¿Qué lista querés usar? Tenés 2 listas: super y farmacia.")
+
+
+def test_list_lists_mentions_current(client, store):
+    store.default = "l2"
+    resp = alexa(client, "ListListsIntent")
+    assert speech(resp).startswith("Tenés 2 listas: super y farmacia. Ahora estoy usando Farmacia.")
+
+
+def test_explicit_list_beats_saved_default(client, store):
+    store.default = "l2"
+    resp = alexa(client, "AddProductIntent", {"product": "leche", "listName": "super"})
+    assert "a Super" in speech(resp)

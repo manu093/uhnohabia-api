@@ -101,6 +101,14 @@ class FirestoreVoiceStore:
         known = [d.to_dict() or {} for d in self.db.collection("knownProducts").where("ownerId", "==", uid).get()]
         return UserContext(categories=cats, known=known)
 
+    def default_list_id(self, uid: str) -> str | None:
+        """Lista elegida con "usá la lista X" (se guarda en users/{uid}.alexaListId)."""
+        doc = self.db.collection("users").document(uid).get()
+        return (doc.to_dict() or {}).get("alexaListId") if doc.exists else None
+
+    def set_default_list(self, uid: str, list_id: str):
+        self.db.collection("users").document(uid).set({"alexaListId": list_id}, merge=True)
+
     def apply(self, list_id: str, adds: list[dict], updates: list[tuple[str, dict]], deletes: list[str]):
         """Aplica todos los cambios de un pedido en un solo batch."""
         lst = self.db.collection("shoppingLists").document(list_id)
