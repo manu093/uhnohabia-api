@@ -1,6 +1,6 @@
 {
-  "versionCode": 26,
-  "versionName": "1.8.1",
-  "releaseNotes": "Alexa mejorada: dictale varios productos juntos con cantidades (por ejemplo: agrega dos leches, un kilo de papa y pan), preguntale que te falta o pedile que saque productos. Ademas, corregido un error al sincronizar productos agregados por voz.",
+  "versionCode": 27,
+  "versionName": "1.8.2",
+  "releaseNotes": "Ahora podes eliminar, renombrar o cambiar el icono de una lista desde el menu de tres puntos en cada lista. Alexa: deci 'Alexa, abri mi super', y elegi la lista con 'usa la lista farmacia' o pregunta 'que listas tengo'.",
   "forceUpdate": false
 }
