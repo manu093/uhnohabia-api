@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DICT = ROOT / "api/product_dictionary.json"
 OUT = ROOT / "alexa/interactionModel.json"
 
-INVOCATION = "mi super"  # "abrir super" no se permite: "abrir" es palabra de arranque
+INVOCATION = "mi súper"  # con tilde: asi transcribe Alexa "súper" al escucharlo. "abrir super" no se permite
 
 ADD_VERBS = ["agregá", "agrega", "agregar", "agregame", "anotá", "anota", "anotame", "sumá", "suma", "sumame",
              "poné", "pone", "poneme", "añadí", "añade", "necesito", "quiero", "comprar", "hay que comprar",

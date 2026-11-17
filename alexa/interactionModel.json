@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "mi super",
+      "invocationName": "mi súper",
       "intents": [
         {
           "name": "AddProductIntent",
