@@ -182,6 +182,10 @@ def _handle_intent(name: str, intent: dict, uid: str, attrs: dict, session_list:
     try:
         if name == "AddProductIntent":
             text = _slot(intent, "product")
+            qty = _slot(intent, "quantity")
+            # Alexa separa el numero inicial ("dos kilos de papa") en el slot quantity
+            if text and qty and qty != "?" and not text.split()[0].replace(",", ".").replace(".", "", 1).isdigit():
+                text = f"{qty} {text}"
             if not text:
                 return alexa_response("¿Qué producto querés agregar?", False,
                                       reprompt="Decime qué querés agregar.", attributes=attrs)

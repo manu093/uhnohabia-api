@@ -63,7 +63,13 @@ def build() -> dict:
             seen.add(v)
             values.append({"name": {"value": v}})
 
-    add_samples = ["{product}"] + [f"{v} {{product}}" for v in ADD_VERBS] + ADD_TO_LIST
+    # Si la frase empieza con un numero ("dos kilos de papa"), Alexa lo separa del slot de texto:
+    # se captura en {quantity} y el backend lo vuelve a unir.
+    qty_verbs = ["agregá", "agrega", "anotá", "anota", "sumá", "poné", "necesito", "quiero", "comprar",
+                 "que agregue", "que anote", "me faltan"]
+    add_samples = (["{product}", "{quantity} {product}"] + [f"{v} {{product}}" for v in ADD_VERBS]
+                   + [f"{v} {{quantity}} {{product}}" for v in qty_verbs] + ADD_TO_LIST
+                   + ["agregá {quantity} {product} a la lista {listName}", "anotá {quantity} {product} en la lista {listName}"])
     remove_samples = [f"{v} {{product}}" for v in REMOVE_VERBS] + REMOVE_FROM_LIST
 
     return {
@@ -72,7 +78,8 @@ def build() -> dict:
                 "invocationName": INVOCATION,
                 "intents": [
                     {"name": "AddProductIntent",
-                     "slots": [{"name": "product", "type": "PRODUCT_NAME"}, {"name": "listName", "type": "LIST_NAME"}],
+                     "slots": [{"name": "product", "type": "PRODUCT_NAME"}, {"name": "listName", "type": "LIST_NAME"},
+                               {"name": "quantity", "type": "AMAZON.NUMBER"}],
                      "samples": add_samples},
                     {"name": "ReadListIntent", "slots": [{"name": "listName", "type": "LIST_NAME"}],
                      "samples": READ},

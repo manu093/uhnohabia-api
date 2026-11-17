@@ -196,3 +196,15 @@ def test_firestore_hang_answers_before_alexa_timeout(client, store, monkeypatch)
     resp = alexa(client, "ReadListIntent")
     assert _t.monotonic() - start < 1.5
     assert "tardando" in speech(resp) and resp["response"]["shouldEndSession"] is True
+
+
+def test_leading_number_comes_in_quantity_slot(client, store):
+    alexa(client, "AddProductIntent", {"product": "kilos de berenjena y 1 lavandina", "quantity": "2"})
+    by_name = {p["name"]: p for p in store.items["l1"]}
+    assert (by_name["Berenjena"]["quantity"], by_name["Berenjena"]["unit"]) == (2.0, "Kg")
+    assert by_name["Lavandina"]["quantity"] == 1.0
+
+
+def test_quantity_not_duplicated_when_text_has_number(client, store):
+    alexa(client, "AddProductIntent", {"product": "3 leches", "quantity": "3"})
+    assert store.items["l1"][0]["quantity"] == 3.0
