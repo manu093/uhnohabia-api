@@ -102,7 +102,11 @@ _UNITS = {
     "latas": "Unidad", "botella": "Unidad", "botellas": "Unidad", "pack": "Unidad", "packs": "Unidad",
     "bolsa": "Unidad", "bolsas": "Unidad", "frasco": "Unidad", "frascos": "Unidad",
     "unidad": "Unidad", "unidades": "Unidad", "sachet": "Unidad", "sachets": "Unidad",
+    # Abreviaturas que devuelve el reconocimiento de voz de Alexa ("dos kilos" -> "2k")
+    "k": "Kg", "kgs": "Kg", "grs": "Gr", "lt": "Litro", "lts": "Litro", "ml": "ml", "cc": "ml",
 }
+# "2k", "2kg", "500g", "1l", "750cc" -> "2 k", "2 kg", ...
+_GLUED_UNIT = re.compile(r"\b(\d+(?:[.,]\d+)?)(kgs?|k|grs?|g|lts?|l|ml|cc)\b")
 # Palabras que unen partes de un mismo producto ("jugo de naranja", "yogur con cereales")
 _CONNECTORS = {"de", "del", "con", "sin", "en", "para", "a", "al", "la", "el", "las", "los", "x", "por"}
 _ARTICLES = {"el", "la", "los", "las", "lo", "unos", "unas", "mi", "mis", "algo", "algun", "alguna"}
@@ -182,6 +186,8 @@ def _to_item(words: list[str], original: dict[str, str]) -> VoiceItem | None:
         rest = rest[:-2]
     while rest and rest[-1] in _CONNECTORS:
         rest = rest[:-1]
+    if unit == "ml":  # la app no tiene ml
+        qty, unit = qty / 1000.0, "Litro"
     # "la leche", "los tomates", "unos fideos"
     while len(rest) > 1 and rest[0] in _ARTICLES:
         rest = rest[1:]
@@ -204,7 +210,7 @@ def parse_products(text: str) -> list[VoiceItem]:
     for w in re.findall(r"[\wáéíóúüñÁÉÍÓÚÜÑ]+", text):
         original.setdefault(normalize(w), w.lower())
     items: list[VoiceItem] = []
-    for chunk in _SEPARATORS.split(normalize(text)):
+    for chunk in _SEPARATORS.split(_GLUED_UNIT.sub(r"\1 \2", normalize(text))):
         for words in _split_chunk(chunk.split()):
             item = _to_item(words, original)
             if item:

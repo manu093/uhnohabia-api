@@ -6,7 +6,7 @@ escrituras en lote."""
 import time
 from dataclasses import dataclass, field
 
-from api.voice_parser import OTROS, VoiceItem, normalize
+from api.voice_parser import OTROS, VoiceItem, normalize, parse_products
 
 DEFAULT_CATEGORY_EMOJI = {
     "Carnicería": "🥩", "Verdulería": "🥬", "Limpieza": "🧹", "Perfumería": "🧴",
@@ -28,15 +28,22 @@ def _millis(value) -> int:
     return 0
 
 
-def same_product(a: str, b: str) -> bool:
-    """'Leche' == 'leches' == 'LECHE'; 'tomate' == 'tomates'; 'limón' == 'limones'."""
+def _same_text(a: str, b: str) -> bool:
     na, nb = normalize(a), normalize(b)
     if na == nb:
         return True
-    for x, y in ((na, nb), (nb, na)):
-        if x + "s" == y or x + "es" == y:
-            return True
-    return False
+    return any(x + "s" == y or x + "es" == y for x, y in ((na, nb), (nb, na)))
+
+
+def _core_name(name: str) -> str:
+    """Nombre sin cantidad ni articulos: "2k de berenjena" -> "Berenjena"."""
+    items = parse_products(name)
+    return items[0].name if len(items) == 1 else name
+
+
+def same_product(a: str, b: str) -> bool:
+    """'Leche' == 'leches' == 'LECHE'; 'limón' == 'limones'; '2k de berenjena' == 'berenjena'."""
+    return _same_text(a, b) or _same_text(_core_name(a), _core_name(b))
 
 
 @dataclass

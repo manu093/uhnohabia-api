@@ -90,3 +90,23 @@ def test_dictionary_in_sync_with_android():
     r = subprocess.run([sys.executable, str(ROOT / "scripts/export_dictionary.py"), "--check"],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stderr or r.stdout
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("2k de berenjena", [("Berenjena", 2, "Kg")]),
+    ("2 K de berenjena", [("Berenjena", 2, "Kg")]),
+    ("berenjena 2k", [("Berenjena", 2, "Kg")]),
+    ("2kg de papa y 500g de queso", [("Papa", 2, "Kg"), ("Queso", 500, "Gr")]),
+    ("1l de leche", [("Leche", 1, "Litro")]),
+    ("750 cc de crema", [("Crema", 0.75, "Litro")]),
+    ("3 lavandinas", [("Lavandinas", 3, "Unidad")]),
+])
+def test_alexa_asr_abbreviations(text, expected):
+    assert summary(text) == expected
+
+
+def test_same_product_ignores_quantity_in_name():
+    from api.voice_store import same_product
+    assert same_product("2k de berenjena", "berenjena")
+    assert same_product("Berenjena 2k", "la berenjena")
+    assert not same_product("Berenjena", "lavandina")
