@@ -384,12 +384,20 @@ class ShoppingListRepositoryImpl @Inject constructor(
 
     private suspend fun updateListTimestamp(listId: String, pendingSync: Boolean) {
         val listEntity = shoppingListDao.getById(listId) ?: return
+        val now = Instant.now().toEpochMilli()
         shoppingListDao.update(
             listEntity.copy(
-                updatedAt = Instant.now().toEpochMilli(),
+                updatedAt = now,
                 pendingSync = pendingSync
             )
         )
+        // Tambien en Firestore: Alexa usa la lista modificada mas recientemente cuando no se
+        // le dice cual. Sin esto, los cambios hechos desde la app no contaban.
+        if (!pendingSync) {
+            try {
+                firestore.collection(LISTS_COLLECTION).document(listId).update("updatedAt", now)
+            } catch (_: Exception) { }
+        }
     }
 
     private suspend fun syncListToFirestore(list: ShoppingList) {
