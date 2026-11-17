@@ -68,6 +68,7 @@ class MainActivity : ComponentActivity() {
 
         // Handle App Actions intent (Ok Google, agregá X a mi lista)
         val productFromVoice = intent?.getStringExtra("product_name")
+        handleInviteLink(intent)
 
         setContent {
             val designStyle = remember { getDesignStyle(this) }
@@ -91,6 +92,19 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleInviteLink(intent)
+    }
+
+    /** Link de invitacion a una lista: ShoppingListViewModel la acepta al haber sesion. */
+    private fun handleInviteLink(intent: android.content.Intent?) {
+        com.sharedshoppinglists.app.presentation.shared.PendingInviteLink.parse(intent?.data)?.let {
+            com.sharedshoppinglists.app.presentation.shared.PendingInviteLink.id.value = it
         }
     }
 }

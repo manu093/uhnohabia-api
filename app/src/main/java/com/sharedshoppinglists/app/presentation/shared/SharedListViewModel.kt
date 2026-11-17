@@ -76,7 +76,7 @@ class SharedListViewModel @Inject constructor(
         viewModelScope.launch {
             _shareResult.value = ShareResult.Loading
             sharedListRepository.shareList(listId, email)
-                .onSuccess { _shareResult.value = ShareResult.Success }
+                .onSuccess { _shareResult.value = ShareResult.Success(it) }
                 .onFailure { _shareResult.value = ShareResult.Error(it.message ?: "Error al compartir") }
         }
     }
@@ -115,7 +115,7 @@ class SharedListViewModel @Inject constructor(
 sealed class ShareResult {
     data object Idle : ShareResult()
     data object Loading : ShareResult()
-    data object Success : ShareResult()
+    data class Success(val message: String) : ShareResult()
     data class LinkGenerated(val url: String) : ShareResult()
     data class Error(val message: String) : ShareResult()
 }

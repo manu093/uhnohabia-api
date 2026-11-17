@@ -6,6 +6,7 @@ La logica vive en el paquete `api/`:
   api/routers/catalog.py  -> /catalog/* (catalogo Postgres + optimizador)
   api/routers/voice.py    -> /voice/alexa, /voice/google
   api/routers/auth.py     -> vinculacion de Alexa y /auth/admin-reset
+  api/routers/share.py    -> compartir listas (/share/*, /invite/{id}, assetlinks)
 """
 import logging
 from contextlib import asynccontextmanager
@@ -16,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api import alexa_tokens, db, scraper
 from api.config import ENABLE_INTERNAL_SCRAPER, SCRAPER_MIN_HOURS_BETWEEN_RUNS
-from api.routers import auth, catalog, meta, sepa, voice
+from api.routers import auth, catalog, meta, sepa, share, voice
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 log = logging.getLogger("uhnohabia")
@@ -59,5 +60,5 @@ app = FastAPI(title="Precios API", version="2.0.0", lifespan=lifespan)
 # La app Android no necesita CORS; se deja abierto solo para GET (paginas y consultas publicas).
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
 
-for r in (meta.router, sepa.router, catalog.router, voice.router, auth.router):
+for r in (meta.router, sepa.router, catalog.router, voice.router, auth.router, share.router):
     app.include_router(r)

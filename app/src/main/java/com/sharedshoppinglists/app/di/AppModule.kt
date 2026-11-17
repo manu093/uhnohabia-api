@@ -93,8 +93,10 @@ object AppModule {
     ): ShoppingListRepository = ShoppingListRepositoryImpl(listDao, productDao, customCategoryDao, firestore, networkMonitor, appScope)
 
     @Provides @Singleton
-    fun provideSharedListRepository(firestore: FirebaseFirestore): SharedListRepository =
-        SharedListRepositoryImpl(firestore)
+    fun provideSharedListRepository(
+        firestore: FirebaseFirestore,
+        shareApi: com.sharedshoppinglists.app.data.remote.ShareApiClient
+    ): SharedListRepository = SharedListRepositoryImpl(firestore, shareApi)
 
     @Provides @Singleton
     fun provideDiscountCardRepository(dao: DiscountCardDao): DiscountCardRepository =

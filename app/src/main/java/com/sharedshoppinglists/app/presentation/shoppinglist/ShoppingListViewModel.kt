@@ -81,6 +81,17 @@ class ShoppingListViewModel @Inject constructor(
 
     init {
         loadCatalogStatus()
+        // Invitacion abierta desde un link: se acepta en cuanto hay sesion iniciada
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                com.sharedshoppinglists.app.presentation.shared.PendingInviteLink.id, _currentUserId
+            ) { inviteId, uid -> inviteId to uid }.collect { (inviteId, uid) ->
+                if (inviteId != null && uid != null) {
+                    com.sharedshoppinglists.app.presentation.shared.PendingInviteLink.id.value = null
+                    acceptInvitation(inviteId)
+                }
+            }
+        }
         viewModelScope.launch {
             authRepository.getCurrentUser().collect { user ->
                 _currentUserId.value = user?.id
@@ -90,7 +101,7 @@ class ShoppingListViewModel @Inject constructor(
                     _currentUserDisplayName.value = auth.currentUser?.displayName?.takeIf { it.isNotBlank() }
                         ?: auth.currentUser?.email?.substringBefore("@")
                         ?: "Yo"
-                    loadPendingInvitations(user.email)
+                    loadPendingInvitations()
                     loadNotifications(user.id)
                 } else {
                     _pendingInvitations.value = emptyList()
@@ -255,27 +266,38 @@ class ShoppingListViewModel @Inject constructor(
         _autocompleteSuggestions.value = emptyList()
     }
 
-    private fun loadPendingInvitations(email: String) {
+    private fun loadPendingInvitations() {
         viewModelScope.launch {
-            _pendingInvitations.value = sharedListRepository.getPendingInvitations(email)
+            sharedListRepository.getPendingInvitations()
+                .onSuccess { _pendingInvitations.value = it }
         }
+    }
+
+    /** Se llama al volver a la pantalla de listas: la invitacion puede haber llegado despues. */
+    fun refreshInvitations() {
+        if (_currentUserId.value != null) loadPendingInvitations()
     }
 
     fun acceptInvitation(invitationId: String) {
         val userId = _currentUserId.value ?: return
         viewModelScope.launch {
-            sharedListRepository.acceptInvitation(invitationId, userId)
-            _pendingInvitations.value = _pendingInvitations.value.filter { it.id != invitationId }
-            // Force refresh lists to include the newly shared list
-            _currentUserId.value = null
-            _currentUserId.value = userId
+            sharedListRepository.acceptInvitation(invitationId)
+                .onSuccess { listName ->
+                    _pendingInvitations.value = _pendingInvitations.value.filter { it.id != invitationId }
+                    _error.value = "Te uniste a la lista $listName"
+                    // Fuerza a recargar las listas para que aparezca la nueva
+                    _currentUserId.value = null
+                    _currentUserId.value = userId
+                }
+                .onFailure { _error.value = it.message ?: "No se pudo aceptar la invitación." }
         }
     }
 
     fun declineInvitation(invitationId: String) {
         viewModelScope.launch {
             sharedListRepository.declineInvitation(invitationId)
-            _pendingInvitations.value = _pendingInvitations.value.filter { it.id != invitationId }
+                .onSuccess { _pendingInvitations.value = _pendingInvitations.value.filter { it.id != invitationId } }
+                .onFailure { _error.value = it.message ?: "No se pudo rechazar la invitación." }
         }
     }
 

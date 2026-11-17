@@ -115,6 +115,11 @@ fun ShoppingListsScreen(
     LaunchedEffect(error) {
         error?.let { snackbarHostState.showSnackbar(it); viewModel.clearError() }
     }
+    // Al volver a esta pantalla se buscan invitaciones nuevas
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        viewModel.refreshInvitations()
+        onPauseOrDispose { }
+    }
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var listToDelete by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
     var listToRename by rememberSaveable { mutableStateOf<ShoppingList?>(null) }

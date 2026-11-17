@@ -1,5 +1,6 @@
 import groovy.json.JsonSlurper
 import java.io.FileInputStream
+import java.net.URI
 import java.util.Properties
 
 plugins {
@@ -39,6 +40,7 @@ android {
         versionName = appVersion["versionName"] as String
 
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        manifestPlaceholders["apiHost"] = URI(apiBaseUrl).host
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

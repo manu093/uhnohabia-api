@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -117,7 +118,7 @@ fun ShareListDialog(
                     }
                     is ShareResult.Success -> {
                         Text(
-                            text = "✓ Invitación enviada correctamente",
+                            text = "✓ ${result.message}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -134,9 +135,16 @@ fun ShareListDialog(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            TextButton(onClick = { onCopyLink(result.url) }) {
-                                Text("Copiar enlace")
+                            Button(onClick = { onCopyLink(result.url) }, modifier = Modifier.fillMaxWidth()) {
+                                Icon(Icons.Default.Share, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Enviar link (WhatsApp, etc.)")
                             }
+                            Text(
+                                text = "Cualquiera con el link puede unirse durante 30 días.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                     is ShareResult.Error -> {

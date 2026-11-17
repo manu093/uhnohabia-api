@@ -3,6 +3,7 @@ package com.sharedshoppinglists.app.data.repository
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.sharedshoppinglists.app.data.remote.ShareApiClient
 import com.sharedshoppinglists.app.domain.model.ChangeType
 import com.sharedshoppinglists.app.domain.model.EditingStatus
 import com.sharedshoppinglists.app.domain.model.ListChangeEvent
@@ -16,126 +17,27 @@ import java.util.UUID
 import javax.inject.Inject
 
 class SharedListRepositoryImpl @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val shareApi: ShareApiClient
 ) : SharedListRepository {
 
-    override suspend fun shareList(listId: String, inviteeEmail: String): Result<Unit> {
-        return try {
-            val invitationId = UUID.randomUUID().toString()
-            val invitation = mapOf(
-                "listId" to listId,
-                "inviteeEmail" to inviteeEmail,
-                "status" to "pending",
-                "createdAt" to System.currentTimeMillis()
-            )
-            firestore.collection(INVITATIONS_COLLECTION)
-                .document(invitationId)
-                .set(invitation)
-                .await()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    // Compartir pasa por el backend: el invitado no es miembro todavia y las reglas de
+    // Firestore no le dejan leer la lista ni agregarse a members.
 
-    override suspend fun shareListByLink(listId: String): Result<String> {
-        return try {
-            val linkId = UUID.randomUUID().toString()
-            val linkData = mapOf(
-                "listId" to listId,
-                "status" to "pending",
-                "createdAt" to System.currentTimeMillis()
-            )
-            firestore.collection(INVITATIONS_COLLECTION)
-                .document(linkId)
-                .set(linkData)
-                .await()
-            val shareUrl = "$SHARE_BASE_URL$linkId"
-            Result.success(shareUrl)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    override suspend fun shareList(listId: String, inviteeEmail: String): Result<String> =
+        runCatching { shareApi.inviteByEmail(listId, inviteeEmail) }
 
-    override suspend fun acceptInvitation(invitationId: String, userId: String): Result<Unit> {
-        return try {
-            val invitationDoc = firestore.collection(INVITATIONS_COLLECTION)
-                .document(invitationId)
-                .get()
-                .await()
+    override suspend fun shareListByLink(listId: String): Result<String> =
+        runCatching { shareApi.createLink(listId) }
 
-            if (!invitationDoc.exists()) {
-                return Result.failure(Exception("Invitation not found"))
-            }
+    override suspend fun acceptInvitation(invitationId: String): Result<String> =
+        runCatching { shareApi.accept(invitationId).listName }
 
-            val listId = invitationDoc.getString("listId")
-                ?: return Result.failure(Exception("Invalid invitation: missing listId"))
+    override suspend fun declineInvitation(invitationId: String): Result<Unit> =
+        runCatching { shareApi.decline(invitationId) }
 
-            firestore.runTransaction { transaction ->
-                val listRef = firestore.collection(LISTS_COLLECTION).document(listId)
-                val listSnapshot = transaction.get(listRef)
-
-                @Suppress("UNCHECKED_CAST")
-                val currentMembers = listSnapshot.get("members") as? List<String> ?: emptyList()
-
-                if (!currentMembers.contains(userId)) {
-                    transaction.update(listRef, mapOf(
-                        "members" to currentMembers + userId,
-                        "isShared" to true
-                    ))
-                }
-
-                val invitationRef = firestore.collection(INVITATIONS_COLLECTION).document(invitationId)
-                transaction.update(invitationRef, "status", "accepted")
-            }.await()
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun declineInvitation(invitationId: String): Result<Unit> {
-        return try {
-            firestore.collection(INVITATIONS_COLLECTION)
-                .document(invitationId)
-                .delete()
-                .await()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun getPendingInvitations(email: String): List<PendingInvitation> {
-        return try {
-            val invitationDocs = firestore.collection(INVITATIONS_COLLECTION)
-                .whereEqualTo("inviteeEmail", email)
-                .whereEqualTo("status", "pending")
-                .get()
-                .await()
-
-            invitationDocs.documents.mapNotNull { doc ->
-                val listId = doc.getString("listId") ?: return@mapNotNull null
-                val inviteeEmail = doc.getString("inviteeEmail") ?: return@mapNotNull null
-
-                val listDoc = firestore.collection(LISTS_COLLECTION)
-                    .document(listId)
-                    .get()
-                    .await()
-                val listName = listDoc.getString("name") ?: "Lista sin nombre"
-
-                PendingInvitation(
-                    id = doc.id,
-                    listId = listId,
-                    listName = listName,
-                    inviteeEmail = inviteeEmail
-                )
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
+    override suspend fun getPendingInvitations(): Result<List<PendingInvitation>> =
+        runCatching { shareApi.pendingInvitations() }
 
     override fun observeListChanges(listId: String): Flow<ListChangeEvent> = callbackFlow {
         val listener: ListenerRegistration = firestore.collection(LISTS_COLLECTION)
