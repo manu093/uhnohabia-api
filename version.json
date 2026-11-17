@@ -1,6 +1,6 @@
 {
-  "versionCode": 25,
-  "versionName": "1.8.0",
-  "releaseNotes": "Importar lista mejorado: al pegar una lista (por ejemplo de WhatsApp) cada producto queda con su categoria, emoji y cantidad automaticamente. Ademas, mejoras de estabilidad y seguridad.",
+  "versionCode": 26,
+  "versionName": "1.8.1",
+  "releaseNotes": "Alexa mejorada: dictale varios productos juntos con cantidades (por ejemplo: agrega dos leches, un kilo de papa y pan), preguntale que te falta o pedile que saque productos. Ademas, corregido un error al sincronizar productos agregados por voz.",
   "forceUpdate": false
 }
