@@ -1,6 +1,6 @@
 {
-  "versionCode": 28,
-  "versionName": "1.8.3",
-  "releaseNotes": "Alexa ahora usa la ultima lista que modificaste (desde la app o por voz) cuando no le decis cual. Si queres otra, decile 'usa la lista ...' o 'agrega leche a la lista ...'.",
+  "versionCode": 29,
+  "versionName": "1.8.4",
+  "releaseNotes": "Compartir listas arreglado: invitar por email ahora funciona (sin importar mayusculas) y el link de invitacion abre la app y te une a la lista. Las invitaciones aparecen al volver a la pantalla de listas.",
   "forceUpdate": false
 }
